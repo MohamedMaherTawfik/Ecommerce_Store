@@ -1,0 +1,13 @@
+<?php
+
+namespace Tests;
+
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+
+abstract class TestCase extends BaseTestCase
+{
+    protected function api(): static
+    {
+        return $this->withHeader('X-API-KEY', (string) env('API_KEY'));
+    }
+}

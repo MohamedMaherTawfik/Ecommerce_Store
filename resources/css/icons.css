@@ -1,0 +1,12 @@
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+.bi::before,
+[class^="bi-"]::before,
+[class*=" bi-"]::before {
+    width: 1em;
+    min-width: 1em;
+    height: 1em;
+    line-height: 1;
+    overflow: hidden;
+    text-align: center;
+}

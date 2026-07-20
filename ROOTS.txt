@@ -1,0 +1,110 @@
+📁 PROJECT RULES (UPDATED)
+
+⚠️ STRICT + MINIMAL OUTPUT
+⚠️ NULL SAFETY REQUIRED
+
+🧠 RESPONSE STYLE
+
+3–6 word sentences only
+Direct commands only
+No filler words
+
+🛡️ NULL SAFETY RULE (NEW 🔥)
+
+Always use optional chaining
+Use fallback defaults always
+Validate API response shape
+Never trust response data
+
+📌 VUE NULL SAFETY
+
+Use ?. everywhere
+Use ?? for defaults
+
+Example:
+
+item?.id ?? null
+
+Never loop unknown data
+
+Example:
+
+Array.isArray(data) ? data : []
+
+Guard all v-for
+
+Example:
+
+v-for="item in safeList"
+
+Computed safe list
+
+Example:
+
+const safeList = computed(() =>
+  Array.isArray(apiData.value) ? apiData.value : []
+)
+
+📌 API RESPONSE SAFETY
+
+Expect nested structure
+
+Example:
+
+res?.data?.data ?? []
+
+Never use direct access
+
+❌ res.data
+✅ res?.data?.data ?? []
+
+📌 SERVICE SAFETY
+
+Normalize response inside service
+
+Example:
+
+return res?.data?.data ?? []
+
+Never return raw response
+
+📌 TEMPLATE SAFETY
+
+Never access deep مباشرة
+
+❌ item.user.id
+✅ item?.user?.id ?? null
+
+📌 STORE / STATE SAFETY
+
+Initialize safe defaults
+
+ref([])
+ref({})
+ref(null)
+
+📌 ITERATION RULE
+
+Never spread unknown
+
+❌ [...data]
+✅ [...(Array.isArray(data) ? data : [])]
+
+📌 CONDITIONAL RENDER
+
+Always guard render
+
+v-if="item"
+
+📌 ERROR PREVENTION
+
+Check before render
+Check before map
+Check before access
+
+🔥 FINAL GOAL
+
+Zero runtime errors
+Stable UI always
+Safe data flow
+Production safe code

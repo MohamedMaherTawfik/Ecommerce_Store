@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "blog": "Blog",
+    "wishlist": "Wishlist",
+    "about": "About Us",
+    "contact": "Contact Us",
+    "login": "Sign In",
+    "logout": "Sign Out",
+    "profile": "Profile",
+    "cart": "Cart",
+    "search": "Search",
+    "theme": "Toggle Theme"
+  },
+  "hero": {
+    "eyebrow": "Featured Drop",
+    "fallback": "Refined pieces crafted for those who lead, not follow.",
+    "shop_now": "Shop Now",
+    "explore_all": "Explore All",
+    "starting_at": "Starting at"
+  },
+  "sections": {
+    "browse": "Browse",
+    "shop_by_category": "Shop by Category",
+    "view_all": "View all",
+    "curated": "Curated",
+    "featured_products": "Featured Products",
+    "see_all": "See all",
+    "trending": "Trending",
+    "best_sellers": "Best Sellers",
+    "partners": "Partners",
+    "brands_we_carry": "Brands We Carry",
+    "deals": "Deals",
+    "hot_offers": "Hot Offers",
+    "ends_in": "Ends in:",
+    "shop_deal": "Shop Deal",
+    "our_promise": "Our Promise",
+    "why_choose_us": "Why Choose Us",
+    "social_proof": "Social Proof",
+    "what_customers_say": "What Customers Say",
+    "items": "items"
+  },
+  "newsletter": {
+    "eyebrow": "Stay in the loop",
+    "title": "Get Exclusive Drops & Offers First",
+    "sub": "Join 12,000+ style-forward subscribers. No spam, ever.",
+    "placeholder": "your{'@'}email.com",
+    "subscribe": "Subscribe",
+    "subscribed": "Subscribed!",
+    "success": "🎉 You're in! Watch your inbox for the first drop."
+  },
+  "cart": {
+    "add_to_cart": "Add to Cart",
+    "adding": "Adding…",
+    "added": "Added to cart."
+  },
+  "footer": {
+    "quick_links": "Quick Links",
+    "support": "Support & Contact",
+    "home": "Home",
+    "products": "Products",
+    "about": "About Us",
+    "contact": "Contact Us",
+    "copyright_page": "Copyright",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "help": "Help Center"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry"
+  }
+}

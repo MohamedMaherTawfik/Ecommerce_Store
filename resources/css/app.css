@@ -1,0 +1,267 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+@import 'tailwindcss';
+/* resources/css/app.css */
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+:root {
+    --premium-ink: #0f172a;
+    --premium-text: #111827;
+    --premium-muted: #6b7280;
+    --premium-surface: rgba(255, 255, 255, 0.9);
+    --premium-surface-soft: rgba(255, 255, 255, 0.62);
+    --premium-border: rgba(15, 23, 42, 0.08);
+    --premium-shadow-sm: 0 12px 30px rgba(15, 23, 42, 0.06);
+    --premium-shadow-lg: 0 30px 60px rgba(15, 23, 42, 0.12);
+    --premium-gold: #d4af37;
+    --premium-gold-soft: rgba(212, 175, 55, 0.14);
+    --premium-gold-ink: #8b6508;
+}
+
+:root[data-theme="light"] {
+    --bg-main:
+        radial-gradient(circle at 0% 0%, rgba(212, 175, 55, 0.09) 0%, transparent 38%),
+        radial-gradient(circle at 100% 0%, rgba(15, 23, 42, 0.05) 0%, transparent 36%),
+        linear-gradient(180deg, #f8fafc 0%, #f7f5f1 100%);
+    --nav-bg: rgba(255, 255, 255, 0.88);
+    --text-main: #111827;
+    --btn-bg: #f4f4f5;
+    --gold: #b8860b;
+
+    --sf-bg: #f8fafc;
+    --sf-surface: #ffffff;
+    --sf-surface-soft: #f5f5f4;
+    --sf-border: #e5e7eb;
+    --sf-text: #111827;
+    --sf-muted: #6b7280;
+    --sf-primary: #111827;
+    --sf-primary-soft: rgba(17, 24, 39, 0.08);
+    --sf-danger: #dc2626;
+    --sf-success: #059669;
+    --sf-shadow-sm: 0 10px 25px rgba(15, 23, 42, 0.05);
+    --sf-shadow-lg: 0 28px 50px rgba(15, 23, 42, 0.1);
+}
+
+:root[data-theme="dark"] {
+    --bg-main:
+        radial-gradient(circle at 0% 0%, rgba(212, 175, 55, 0.12) 0%, transparent 38%),
+        radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.04) 0%, transparent 35%),
+        linear-gradient(180deg, #050816 0%, #090d18 100%);
+    --nav-bg: rgba(9, 13, 24, 0.82);
+    --text-main: #f8fafc;
+    --btn-bg: #1e293b;
+    --gold: #d4af37;
+
+    --sf-bg: #020617;
+    --sf-surface: #0f172a;
+    --sf-surface-soft: #111827;
+    --sf-border: #243047;
+    --sf-text: #e5e7eb;
+    --sf-muted: #94a3b8;
+    --sf-primary: #f8fafc;
+    --sf-primary-soft: rgba(255, 255, 255, 0.08);
+    --sf-danger: #f87171;
+    --sf-success: #34d399;
+    --sf-shadow-sm: 0 10px 25px rgba(2, 6, 23, 0.6);
+    --sf-shadow-lg: 0 28px 50px rgba(2, 6, 23, 0.75);
+
+    --premium-ink: #f8fafc;
+    --premium-text: #e5e7eb;
+    --premium-muted: #94a3b8;
+    --premium-surface: rgba(15, 23, 42, 0.86);
+    --premium-surface-soft: rgba(255, 255, 255, 0.06);
+    --premium-border: rgba(255, 255, 255, 0.08);
+    --premium-shadow-sm: 0 12px 30px rgba(2, 6, 23, 0.38);
+    --premium-shadow-lg: 0 30px 60px rgba(2, 6, 23, 0.55);
+    --premium-gold: #d4af37;
+    --premium-gold-soft: rgba(212, 175, 55, 0.14);
+    --premium-gold-ink: #f3d77a;
+}
+
+html,
+body,
+#app {
+    min-height: 100%;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background: var(--bg-main);
+    color: var(--sf-text);
+    overflow-x: clip;
+    font-family: var(--font-sans);
+}
+
+.app-body {
+    background: var(--bg-main);
+    color: var(--text-main);
+    min-height: 100vh;
+}
+
+.store-shell {
+    width: min(1280px, 100% - clamp(1.25rem, 4vw, 4rem));
+    margin-inline: auto;
+    padding-block: clamp(1.5rem, 3vw, 2.5rem) clamp(3rem, 5vw, 4rem);
+}
+
+.store-card {
+    border: 1px solid var(--sf-border);
+    border-radius: 1rem;
+    background: var(--sf-surface);
+    box-shadow: var(--sf-shadow-sm);
+}
+
+.store-title {
+    margin: 0;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--sf-text);
+}
+
+.store-subtitle {
+    margin: 0.4rem 0 0;
+    color: var(--sf-muted);
+    font-size: 0.95rem;
+}
+
+.store-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.32rem 0.72rem;
+    border-radius: 999px;
+    background: var(--sf-primary-soft);
+    color: var(--sf-primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.store-btn {
+    min-height: 44px;
+    padding: 0.7rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: 0.2s ease;
+}
+
+.store-btn:hover {
+    transform: translateY(-1px);
+}
+
+.store-btn:disabled {
+    opacity: 0.6;
+    transform: none;
+}
+
+.store-btn--primary {
+    background: var(--sf-primary);
+    color: #fff;
+}
+
+.store-btn--soft {
+    background: var(--sf-surface-soft);
+    border-color: var(--sf-border);
+    color: var(--sf-text);
+}
+
+.store-input,
+.store-select,
+.store-textarea {
+    min-height: 44px;
+    border: 1px solid var(--sf-border);
+    border-radius: 0.75rem;
+    background: var(--sf-surface);
+    color: var(--sf-text);
+}
+
+.store-textarea {
+    min-height: 120px;
+}
+
+.store-input::placeholder,
+.store-textarea::placeholder {
+    color: var(--sf-muted);
+}
+
+.store-input:focus,
+.store-select:focus,
+.store-textarea:focus {
+    border-color: var(--sf-primary);
+    box-shadow: 0 0 0 3px var(--sf-primary-soft);
+}
+
+.section-shell {
+    width: min(1320px, calc(100% - clamp(1.1rem, 3vw, 2rem)));
+    margin-inline: auto;
+    padding-block: clamp(1rem, 2vw, 1.4rem);
+}
+
+.section-shell--soft {
+    padding-block: clamp(1.25rem, 3vw, 2rem);
+}
+
+.reveal,
+.section-shell,
+.hero-section,
+.trust-strip,
+.promo-banner,
+.newsletter-shell {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity .65s ease, transform .65s ease;
+}
+
+.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.premium-home {
+    width: 100%;
+    overflow-x: clip;
+}
+
+#toast-container > div {
+    opacity: 1 !important;
+}
+
+#toast-container {
+    z-index: 20000 !important;
+}
+
+.toast {
+    color: #fff !important;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18) !important;
+}
+
+.toast-message {
+    color: #fff !important;
+}
+
+.toast-success {
+    background-color: #28a745 !important;
+}
+
+.toast-error {
+    background-color: #dc3545 !important;
+}
+
+.toast-warning {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
