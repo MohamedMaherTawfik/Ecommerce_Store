@@ -122,6 +122,7 @@ import { useCategoriesStore } from "@/stores/useCategoriesStore";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { useWishlistStore } from "@/stores/useWishlistStore";
+import HomeService from "@/services/home/HomeService";
 import Button from "@/components/ui/Button.vue";
 import Badge from "@/components/ui/Badge.vue";
 import Rating from "@/components/ui/Rating.vue";
@@ -154,17 +155,34 @@ const categoriesStore = useCategoriesStore();
 const settingsStore = useSettingsStore();
 const cartStore = useCartStore();
 const wishlistStore = useWishlistStore();
+const latestProducts = ref([]);
+const apiCategories = ref([]);
+const apiBrands = ref([]);
+const apiRandomThree = ref([]);
+const apiRandomFour = ref([]);
+const apiFeaturedProducts = ref([]);
 
 const lang = computed(() => String(route.params.lang || localStorage.getItem("language") || "en"));
 
 const heroSlides = computed(() => homeStore.heroSlides);
 const trustItems = computed(() => homeStore.trustItems);
-const categories = computed(() => categoriesStore.categories);
-const brands = computed(() => categoriesStore.featuredBrands);
-const flashSale = computed(() => productsStore.flashSale);
-const featuredProducts = computed(() => productsStore.featured);
-const bestSellers = computed(() => productsStore.bestSellers);
-const trendingProducts = computed(() => productsStore.trending);
+const categories = computed(() => apiCategories.value);
+const brands = computed(() => apiBrands.value);
+const flashSale = computed(() => {
+    const sale = productsStore.flashSale;
+    if (!sale) return null;
+    return {
+        ...sale,
+        items: apiRandomThree.value.length > 0 ? apiRandomThree.value : sale.items,
+    };
+});
+const featuredProducts = computed(() => latestProducts.value);
+const bestSellers = computed(() => {
+    return apiRandomFour.value.length > 0 ? apiRandomFour.value : productsStore.bestSellers;
+});
+const trendingProducts = computed(() => {
+    return apiFeaturedProducts.value.length > 0 ? apiFeaturedProducts.value : productsStore.trending;
+});
 const promotionalBanner = computed(() => homeStore.promotionalBanner);
 const promiseItems = computed(() => homeStore.promiseItems);
 const testimonials = computed(() => homeStore.testimonials);
@@ -176,6 +194,46 @@ const loadingReels = computed(() => homeStore.loading);
 
 const cartAddingId = ref(null);
 
+const normalizeProduct = (product) => ({
+    ...product,
+    brand: product?.brand?.name || product?.brand || "",
+    category: product?.category?.name || product?.category || "",
+    rating: product?.rating ?? product?.average_rating ?? 0,
+    compareAtPrice: product?.compareAtPrice ?? product?.compare_at_price ?? null,
+});
+
+const normalizeCategory = (category) => ({
+    ...category,
+    productsCount: category?.productsCount ?? category?.products_count ?? 0,
+});
+
+const normalizeBrand = (brand) => ({
+    ...brand,
+    productsCount: brand?.productsCount ?? brand?.products_count ?? 0,
+});
+
+const paginatedItems = (response) => (Array.isArray(response?.data?.data) ? response.data.data : []);
+const responseItems = (response) => (Array.isArray(response?.data) ? response.data : []);
+
+const loadApiContent = async () => {
+    const [latestResponse, categoriesResponse, brandsResponse, randomThreeResponse, randomFourResponse, featuredResponse] = await Promise.all([
+        HomeService.getLatestProducts(),
+        HomeService.getCategories(),
+        HomeService.getBrands(),
+        HomeService.getRandomThree(),
+        HomeService.getRandomFour(),
+        HomeService.getFeaturedProducts(),
+    ]);
+
+    latestProducts.value = responseItems(latestResponse).map(normalizeProduct);
+    apiCategories.value = paginatedItems(categoriesResponse).slice(0, 6).map(normalizeCategory);
+    apiBrands.value = paginatedItems(brandsResponse).slice(0, 6).map(normalizeBrand);
+
+    apiRandomThree.value = responseItems(randomThreeResponse).map(normalizeProduct);
+    apiRandomFour.value = responseItems(randomFourResponse).map(normalizeProduct);
+    apiFeaturedProducts.value = responseItems(featuredResponse).map(normalizeProduct);
+};
+
 useSeoMeta({
     title: () => `${settingsStore.siteLabel} | Premium Home`,
     description:
@@ -185,7 +243,7 @@ useSeoMeta({
 
 const loadHome = async () => {
     try {
-        await homeStore.loadHome();
+        await Promise.all([homeStore.loadHome(), loadApiContent()]);
     } catch {
         // Surface is already handled through the error banner.
     }

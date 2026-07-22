@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\brands;
+use App\Models\Brands;
 use App\Models\Categories;
 use App\Models\ProductColors;
 use App\Models\ProductImages;
@@ -16,53 +16,232 @@ class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        $catalog = [
-            ['Relaxed Linen Shirt', 'Shirts', 'Aster & Co', 68, 'Breathable linen shirt with a relaxed resort fit.', 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=900&auto=format&fit=crop'],
-            ['Essential Cotton Tee', 'T-Shirts', 'Urban Loom', 28, 'Soft heavyweight cotton tee designed for everyday layering.', 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=900&auto=format&fit=crop'],
-            ['Tailored Chino Pants', 'Pants', 'Northline Studio', 76, 'Clean tapered chinos with stretch comfort and crisp structure.', 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=900&auto=format&fit=crop'],
-            ['Cropped Denim Jacket', 'Jackets', 'Thread Theory', 112, 'Modern denim jacket with a structured cropped silhouette.', 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=900&auto=format&fit=crop'],
-            ['Merino Crew Sweater', 'Sweaters', 'Maison Vale', 94, 'Fine merino knit with a soft hand feel and neat rib finish.', 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=900&auto=format&fit=crop'],
-            ['Leather Crossbody Bag', 'Accessories', 'Maison Vale', 128, 'Compact leather crossbody with polished hardware.', 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=900&auto=format&fit=crop'],
-            ['Oxford Button Down', 'Shirts', 'Northline Studio', 72, 'Classic oxford shirt cut for workdays and weekends.', 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=900&auto=format&fit=crop'],
-            ['Wide Leg Trousers', 'Pants', 'Aster & Co', 88, 'Fluid wide leg trousers with a clean front and easy drape.', 'https://images.unsplash.com/photo-1506629905607-d9d297d4499f?w=900&auto=format&fit=crop'],
-            ['Quilted Utility Jacket', 'Jackets', 'Urban Loom', 138, 'Lightweight quilted jacket with utility pockets.', 'https://images.unsplash.com/photo-1543076447-215ad9ba6923?w=900&auto=format&fit=crop'],
-            ['Ribbed Half Zip Knit', 'Sweaters', 'Thread Theory', 86, 'Textured half zip sweater for smart casual layering.', 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=900&auto=format&fit=crop'],
+        $products = [
+
+            [
+                'name' => 'Radiance Vitamin C Serum',
+                'category' => 'Skincare',
+                'brand' => 'The Ordinary',
+                'price' => 24.99,
+                'tax' => 5,
+                'featured' => true,
+                'description' => 'Vitamin C serum that brightens and evens skin tone.'
+            ],
+
+            [
+                'name' => 'Hydra Moisturizing Cream',
+                'category' => 'Skincare',
+                'brand' => 'CeraVe',
+                'price' => 19.99,
+                'tax' => 5,
+                'featured' => true,
+                'description' => 'Deep hydration cream for dry and sensitive skin.'
+            ],
+
+            [
+                'name' => 'Oil Control Face Wash',
+                'category' => 'Skincare',
+                'brand' => 'La Roche-Posay',
+                'price' => 15.99,
+                'tax' => 5,
+                'featured' => false,
+                'description' => 'Daily cleanser for oily and acne-prone skin.'
+            ],
+
+            [
+                'name' => 'Perfect Matte Foundation',
+                'category' => 'Makeup',
+                'brand' => 'Maybelline',
+                'price' => 18.50,
+                'tax' => 8,
+                'featured' => true,
+                'description' => 'Long-lasting matte liquid foundation.'
+            ],
+
+            [
+                'name' => 'Volume Lash Mascara',
+                'category' => 'Makeup',
+                'brand' => 'Maybelline',
+                'price' => 14.25,
+                'tax' => 8,
+                'featured' => false,
+                'description' => 'Waterproof mascara with intense volume.'
+            ],
+
+            [
+                'name' => 'Luxury Velvet Lipstick',
+                'category' => 'Makeup',
+                'brand' => 'L\'Oréal Paris',
+                'price' => 16.99,
+                'tax' => 8,
+                'featured' => true,
+                'description' => 'Smooth matte lipstick with rich pigments.'
+            ],
+
+            [
+                'name' => 'Silky Repair Shampoo',
+                'category' => 'Hair Care',
+                'brand' => 'Garnier',
+                'price' => 11.99,
+                'tax' => 5,
+                'featured' => false,
+                'description' => 'Repair shampoo for damaged hair.'
+            ],
+
+            [
+                'name' => 'Keratin Hair Mask',
+                'category' => 'Hair Care',
+                'brand' => 'L\'Oréal Paris',
+                'price' => 21.99,
+                'tax' => 5,
+                'featured' => true,
+                'description' => 'Hair mask enriched with keratin.'
+            ],
+
+            [
+                'name' => 'Fresh Breeze Body Lotion',
+                'category' => 'Body Care',
+                'brand' => 'Nivea',
+                'price' => 13.99,
+                'tax' => 5,
+                'featured' => false,
+                'description' => 'Lightweight body lotion for everyday hydration.'
+            ],
+
+            [
+                'name' => 'Silk Touch Body Wash',
+                'category' => 'Body Care',
+                'brand' => 'Dove',
+                'price' => 12.50,
+                'tax' => 5,
+                'featured' => true,
+                'description' => 'Gentle moisturizing body wash for soft skin.'
+            ],
+
+            [
+                'name' => 'Rose Bloom Eau De Parfum',
+                'category' => 'Fragrances',
+                'brand' => 'L\'Oréal Paris',
+                'price' => 39.99,
+                'tax' => 10,
+                'featured' => true,
+                'description' => 'Elegant floral perfume with long-lasting freshness.'
+            ],
+
+            [
+                'name' => 'Ocean Mist Cologne',
+                'category' => 'Fragrances',
+                'brand' => 'Garnier',
+                'price' => 29.99,
+                'tax' => 10,
+                'featured' => false,
+                'description' => 'Refreshing aquatic fragrance for daily use.'
+            ],
+
+            [
+                'name' => 'Professional Makeup Brush Set',
+                'category' => 'Beauty Tools',
+                'brand' => 'Maybelline',
+                'price' => 22.99,
+                'tax' => 8,
+                'featured' => false,
+                'description' => 'Premium makeup brush set for flawless application.'
+            ],
+
+            [
+                'name' => 'Beauty Blender Sponge',
+                'category' => 'Beauty Tools',
+                'brand' => 'L\'Oréal Paris',
+                'price' => 9.99,
+                'tax' => 8,
+                'featured' => true,
+                'description' => 'Soft blending sponge for liquid and cream makeup.'
+            ],
+
+            [
+                'name' => 'Glow Renewal Night Cream',
+                'category' => 'Skincare',
+                'brand' => 'CeraVe',
+                'price' => 27.99,
+                'tax' => 5,
+                'featured' => true,
+                'description' => 'Overnight nourishing cream that restores skin moisture.'
+            ],
+
         ];
 
-        foreach ($catalog as [$name, $categoryName, $brandName, $price, $description, $image]) {
-            $category = Categories::where('name', $categoryName)->first();
-            $brand = brands::where('name', $brandName)->first();
+        foreach ($products as $item) {
+
+            $category = Categories::where('name', $item['category'])->first();
+            $brand = Brands::where('name', $item['brand'])->first();
 
             $product = Products::updateOrCreate(
-                ['name' => $name],
+
                 [
-                    'categories_id' => $category?->id,
-                    'brands_id' => $brand?->id,
-                    'slug' => Str::slug($name),
-                    'sku' => 'SKU-' . Str::upper(Str::slug($name, '')),
-                    'image' => $image,
-                    'description' => $description,
-                    'tax' => 0,
+                    'slug' => Str::slug($item['name']),
+                ],
+
+                [
+                    'categorey_id' => $category?->id,
+                    'brand_id' => $brand?->id,
+                    'name' => $item['name'],
+                    'slug' => Str::slug($item['name']),
+                    'image' => 'https://picsum.photos/seed/' . Str::slug($item['name']) . '/600/600',
+                    'description' => $item['description'],
+                    'sku' => 'SKU-' . strtoupper(Str::random(8)),
+                    'tax' => $item['tax'],
+                    'price' => $item['price'],
                     'is_active' => true,
-                    'is_featured' => in_array($categoryName, ['Shirts', 'Jackets', 'Sweaters'], true),
-                    'price' => $price,
-                    'meta_title' => $name,
-                    'meta_description' => $description,
-                    'return_policy' => '14 days',
+                    'is_featured' => $item['featured'],
+                    'meta_title' => $item['name'],
+                    'meta_description' => $item['description'],
+                    'return_policy' => '4 days',
                 ]
             );
 
-            Stock::updateOrCreate(['product_id' => $product->id], ['quantity' => 24]);
+            Stock::updateOrCreate(
+                ['product_id' => $product->id],
+                [
+                    'quantity' => rand(15, 120),
+                ]
+            );
 
-            foreach (['S', 'M', 'L', 'XL'] as $size) {
-                ProductSizes::updateOrCreate(['product_id' => $product->id, 'size' => $size], ['is_active' => true]);
+            for ($i = 1; $i <= 3; $i++) {
+
+                ProductImages::updateOrCreate(
+
+                    [
+                        'product_id' => $product->id,
+                        'image' => "https://picsum.photos/seed/" . Str::slug($item['name']) . "-{$i}/600/600",
+                    ]
+                );
             }
 
-            foreach (['Black', 'White', 'Navy'] as $color) {
-                ProductColors::updateOrCreate(['product_id' => $product->id, 'color' => $color], ['is_active' => true]);
+            if (in_array($item['category'], ['Skincare', 'Hair Care', 'Body Care'])) {
+
+                foreach (['50ml', '100ml', '200ml'] as $size) {
+
+                    ProductSizes::updateOrCreate(
+                        [
+                            'product_id' => $product->id,
+                            'size' => $size,
+                        ]
+                    );
+                }
             }
 
-            ProductImages::updateOrCreate(['product_id' => $product->id, 'image' => $image], []);
+            if ($item['category'] === 'Makeup') {
+
+                foreach (['Ivory', 'Beige', 'Sand', 'Rose', 'Nude'] as $color) {
+
+                    ProductColors::updateOrCreate(
+                        [
+                            'product_id' => $product->id,
+                            'color' => $color,
+                        ]
+                    );
+                }
+            }
         }
     }
 }

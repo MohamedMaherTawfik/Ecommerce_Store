@@ -76,17 +76,22 @@ class Products extends Model
 
     public function category()
     {
-        return $this->belongsTo(Categories::class, 'categories_id');
+        return $this->belongsTo(Categories::class, 'categorey_id');
     }
 
     public function brand()
     {
-        return $this->belongsTo(brands::class, 'brands_id');
+        return $this->belongsTo(brands::class, 'brand_id');
     }
 
     public function images()
     {
         return $this->hasMany(ProductImages::class, 'product_id');
+    }
+
+      public function firstImage()
+    {
+        return $this->hasOne(ProductImages::class, 'product_id');
     }
 
     public function sizes()

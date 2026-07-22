@@ -5,42 +5,42 @@ const clone = (value) => JSON.parse(JSON.stringify(value));
 const heroSlides = [
     {
         id: 1,
-        tag: "Private preview",
-        title: "Tailored essentials for the modern wardrobe",
+        tag: "Bestseller",
+        title: "Radiance Vitamin C Serum",
         description:
-            "A curated mix of elevated silhouettes, premium textures, and quiet confidence.",
-        ctaLabel: "Explore the edit",
-        ctaLink: "/{lang}/products?sort=featured",
+            "Achieve a brighter, more even complexion with our potent Vitamin C serum for a daily youthful glow.",
+        ctaLabel: "Shop Now",
+        ctaLink: "/{lang}/products?category=skincare",
         image:
-            "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1600&q=80",
-        accent: "New season",
-        price: 124,
+            "https://images.unsplash.com/photo-1599305090598-fe179d501227?auto=format&fit=crop&w=1600&q=80",
+        accent: "Must have",
+        price: 45,
     },
     {
         id: 2,
-        tag: "Luxury drop",
-        title: "Minimal layers. Maximum presence.",
+        tag: "New Arrival",
+        title: "Hydra Moisturizing Cream",
         description:
-            "Refined jackets, clean lines, and all-day comfort designed to move with you.",
-        ctaLabel: "Shop outerwear",
-        ctaLink: "/{lang}/products?category=outerwear",
+            "Lock in moisture all day with our lightweight, ultra-hydrating cream formulated for all skin types.",
+        ctaLabel: "Buy Now",
+        ctaLink: "/{lang}/products?category=skincare",
         image:
-            "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1600&q=80",
-        accent: "Editor favorite",
-        price: 186,
+            "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1600&q=80",
+        accent: "Trending",
+        price: 38,
     },
     {
         id: 3,
-        tag: "Limited run",
-        title: "Accessories that finish the story",
+        tag: "Limited Edition",
+        title: "Luxury Velvet Lipstick",
         description:
-            "Small details, high impact. The finishing touches that make an outfit feel complete.",
-        ctaLabel: "See accessories",
-        ctaLink: "/{lang}/products?category=accessories",
+            "Experience rich, long-lasting color with a smooth velvet finish that feels as good as it looks.",
+        ctaLabel: "Explore Product",
+        ctaLink: "/{lang}/products?category=makeup",
         image:
-            "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1600&q=80",
-        accent: "Last chance",
-        price: 78,
+            "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=1600&q=80",
+        accent: "Editor's Pick",
+        price: 28,
     },
 ];
 

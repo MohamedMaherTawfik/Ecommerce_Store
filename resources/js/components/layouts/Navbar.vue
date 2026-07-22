@@ -8,12 +8,12 @@
                 <span>{{ layoutData.navbar?.brand || 'EliteShop' }}</span>
             </RouterLink>
 
-            <nav class="store-nav__links d-none d-lg-flex">
+            <!-- <nav class="store-nav__links d-none d-lg-flex">
                 <RouterLink v-for="link in navLinks" :key="link.key" :to="resolveRoute(link.route)"
                     class="store-nav__link" :class="{ 'is-active': isActive(resolveRoute(link.route)) }">
                     {{ t(`nav.${link.key}`) }}
                 </RouterLink>
-            </nav>
+            </nav> -->
 
             <form class="store-nav__search d-none d-md-flex" @submit.prevent="submitSearch">
                 <i class="bi bi-search"></i>
@@ -43,16 +43,15 @@
                     <span v-if="cartCount" class="count-badge">{{ cartCount }}</span>
                 </button>
 
-                <button class="icon-btn d-lg-none" type="button" @click="mobileOpen = !mobileOpen" aria-label="menu">
-                    <i class="bi" :class="mobileOpen ? 'bi-x-lg' : 'bi-list'"></i>
-                </button>
-
-                <div class="store-nav__auth d-none d-sm-flex">
+                <div class="store-nav__auth">
                     <template v-if="isLoggedIn">
-                        <button class="user-chip" type="button" @click="dropdownOpen = !dropdownOpen">
+                        <button class="user-chip d-none d-sm-flex" type="button" @click="dropdownOpen = !dropdownOpen">
                             <i class="bi bi-person-circle"></i>
                             <span>{{ userName }}</span>
                             <i class="bi" :class="dropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                        </button>
+                        <button class="icon-btn d-sm-none" type="button" @click="dropdownOpen = !dropdownOpen">
+                            <i class="bi bi-person"></i>
                         </button>
                         <div v-if="dropdownOpen" class="user-menu">
                             <RouterLink :to="`/${lang}/profile`" class="user-menu__item">{{ t('nav.profile') }}
@@ -63,9 +62,14 @@
                                 t('nav.logout') }}</button>
                         </div>
                     </template>
-                    <RouterLink v-else :to="`/${lang}/auth`" class="auth-btn">
-                        {{ t('nav.login') }}
-                    </RouterLink>
+                    <template v-else>
+                        <RouterLink :to="`/${lang}/auth`" class="auth-btn d-none d-sm-flex">
+                            {{ t('nav.login') }}
+                        </RouterLink>
+                        <RouterLink :to="`/${lang}/auth`" class="icon-btn d-sm-none" :title="t('nav.login')">
+                            <i class="bi bi-box-arrow-in-right"></i>
+                        </RouterLink>
+                    </template>
                 </div>
             </div>
         </div>
@@ -76,17 +80,29 @@
                 <input v-model.trim="searchText" type="text" :placeholder="t('nav.search')" />
             </form>
         </div>
+    </header>
 
-        <div v-if="mobileOpen" class="store-nav__mobile-links d-lg-none">
-            <RouterLink v-for="link in navLinks" :key="link.key" :to="resolveRoute(link.route)" class="store-nav__link"
+    <!-- Bottom Navigation (Mobile Only) -->
+    <nav class="bottom-nav d-md-none">
+        <RouterLink v-for="link in navLinks.slice(0, 4)" :key="link.key" :to="resolveRoute(link.route)"
+            class="bottom-nav__item" :class="{ 'is-active': isActive(resolveRoute(link.route)) }" @click="mobileOpen = false">
+            <i class="bi" :class="getIconForKey(link.key, isActive(resolveRoute(link.route)))"></i>
+            <span>{{ t(`nav.${link.key}`) }}</span>
+        </RouterLink>
+
+        <button v-if="navLinks.length > 4" class="bottom-nav__item" type="button" @click="mobileOpen = !mobileOpen" :class="{ 'is-active': mobileOpen }">
+            <i class="bi bi-three-dots"></i>
+            <span>{{ lang === 'ar' ? 'المزيد' : 'More' }}</span>
+        </button>
+
+        <!-- More Links Menu -->
+        <div v-if="mobileOpen" class="bottom-nav__more-menu">
+            <RouterLink v-for="link in navLinks.slice(4)" :key="link.key" :to="resolveRoute(link.route)" class="bottom-nav__more-item"
                 :class="{ 'is-active': isActive(resolveRoute(link.route)) }" @click="mobileOpen = false">
                 {{ t(`nav.${link.key}`) }}
             </RouterLink>
-            <RouterLink v-if="!isLoggedIn" :to="`/${lang}/auth`" class="auth-btn" @click="mobileOpen = false">
-                {{ t('nav.login') }}
-            </RouterLink>
         </div>
-    </header>
+    </nav>
 </template>
 
 <script setup>
@@ -132,6 +148,20 @@ const navLinks = computed(() => {
         { key: "blog", route: "/{lang}/blog" },
     ];
 });
+
+const getIconForKey = (key, active = false) => {
+    const icons = {
+        home: active ? 'bi-house-fill' : 'bi-house',
+        categories: active ? 'bi-grid-fill' : 'bi-grid',
+        products: active ? 'bi-bag-fill' : 'bi-bag',
+        offers: active ? 'bi-tag-fill' : 'bi-tag',
+        about: active ? 'bi-info-circle-fill' : 'bi-info-circle',
+        contact: active ? 'bi-envelope-fill' : 'bi-envelope',
+        blog: 'bi-journal-text',
+        wishlist: active ? 'bi-heart-fill' : 'bi-heart',
+    };
+    return icons[key?.toLowerCase()] || 'bi-three-dots';
+};
 
 const normalizeRoute = (routeTemplate = "") =>
     routeTemplate.replace("/{lang}/who", "/{lang}/about").replace("/{lang}/about-us", "/{lang}/about");
@@ -291,7 +321,7 @@ onMounted(async () => {
     display: grid;
     grid-template-columns: auto 1fr auto auto;
     align-items: center;
-    gap: 1rem;
+    gap: 0.3rem;
 }
 
 .store-nav__brand {
@@ -314,11 +344,11 @@ onMounted(async () => {
 
 .store-nav__links {
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.2rem;
 }
 
 .store-nav__link {
-    padding: 0.52rem 0.78rem;
+    padding: 0.45rem 0.6rem;
     border-radius: 0.7rem;
     color: var(--sf-muted);
     font-size: 0.87rem;
@@ -338,8 +368,8 @@ onMounted(async () => {
     display: grid;
     grid-template-columns: auto 1fr;
     align-items: center;
-    gap: 0.6rem;
-    min-height: 44px;
+    gap: 0.5rem;
+    min-height: 40px;
     border-radius: 0.8rem;
     border: 1px solid var(--sf-border);
     background: var(--sf-surface);
@@ -367,7 +397,7 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.4rem;
+    gap: 0.15rem;
 }
 
 .icon-btn {
@@ -408,20 +438,20 @@ onMounted(async () => {
 
 .store-nav__auth {
     position: relative;
-    margin-inline-start: 0.35rem;
+    margin-inline-start: 0.05rem;
 }
 
 .user-chip,
 .auth-btn {
     min-height: 40px;
-    padding: 0.45rem 0.8rem;
+    padding: 0.45rem 0.6rem;
     border-radius: 0.75rem;
     border: 1px solid var(--sf-border);
     background: var(--sf-surface);
     color: var(--sf-text);
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
     text-decoration: none;
     font-size: 0.86rem;
     font-weight: 600;
@@ -485,6 +515,10 @@ onMounted(async () => {
     .store-nav__search {
         display: none;
     }
+
+    .store-nav__links {
+        display: none !important;
+    }
 }
 
 @media (max-width: 767.98px) {
@@ -506,15 +540,101 @@ onMounted(async () => {
     border: 1px solid #9ca3af;
     background: rgb(255, 255, 255);
     color: var(--text-color);
-    padding: 8px 14px;
+    padding: 0 10px;
     border-radius: 12px;
     font-weight: 700;
     transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
 }
 
 .lang-btn:hover {
     transform: translateY(-1px);
     background: rgba(255, 255, 255, 0.15);
     border-color: #d1d5db;
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-top: 1px solid var(--sf-border, #eaeaea);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: center;
+    gap: clamp(1.2rem, 5vw, 2rem);
+    align-items: center;
+    padding: 0.6rem 0;
+    padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px));
+    z-index: 1040;
+}
+
+.bottom-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    color: var(--sf-muted, #6c757d);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: 0.2s ease;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+.bottom-nav__item i {
+    font-size: 1.35rem;
+    margin-bottom: 2px;
+}
+
+.bottom-nav__item.is-active,
+.bottom-nav__item:hover {
+    color: var(--sf-primary, #0d6efd);
+}
+
+.bottom-nav__more-menu {
+    position: absolute;
+    bottom: calc(100% + 0.5rem);
+    right: 1rem;
+    background: var(--sf-surface, #ffffff);
+    border: 1px solid var(--sf-border, #eaeaea);
+    border-radius: 0.85rem;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 150px;
+}
+
+.bottom-nav__more-item {
+    padding: 0.7rem 1rem;
+    color: var(--sf-text, #212529);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    transition: 0.2s;
+    text-align: center;
+}
+
+.bottom-nav__more-item.is-active,
+.bottom-nav__more-item:hover {
+    background: var(--sf-surface-soft, #f8f9fa);
+    color: var(--sf-primary, #0d6efd);
+}
+
+@media (max-width: 767.98px) {
+    :global(body) {
+        padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+    }
 }
 </style>

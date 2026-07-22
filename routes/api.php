@@ -113,6 +113,10 @@ Route::prefix('v1')->group(function () {
     Route::withoutMiddleware(ApiKeyMiddleware::class)->group(function () {
         Route::prefix('products')->group(function () {
             Route::get('/', [HomeProductController::class, 'index']);
+            Route::get('/latest-four', [HomeProductController::class,'latestFour']);
+            Route::get('/random-three', [HomeProductController::class,'randomThree']);
+            Route::get('/random-four', [HomeProductController::class,'randomFour']);
+            Route::get('/featured', [HomeProductController::class,'featured']);
             Route::get('/{product}', [HomeProductController::class, 'show']);
             Route::get('/{product}/related', [HomeProductController::class, 'related']);
         });
