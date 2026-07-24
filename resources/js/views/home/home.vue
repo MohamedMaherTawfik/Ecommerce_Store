@@ -325,7 +325,7 @@ onMounted(() => {
     padding: 1rem 1.1rem;
     border-radius: 1.2rem;
     background: var(--premium-surface);
-    border: 1px solid rgba(220, 38, 38, .18);
+    border: 1px solid color-mix(in srgb, var(--danger) 18%, transparent);
     box-shadow: var(--premium-shadow-sm);
 }
 

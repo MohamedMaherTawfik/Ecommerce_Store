@@ -24,6 +24,23 @@
     --premium-gold: #d4af37;
     --premium-gold-soft: rgba(212, 175, 55, 0.14);
     --premium-gold-ink: #8b6508;
+
+    /* ─── Dynamic Theme Variables (set by themeManager at runtime) ─── */
+    /* Fallback values active before the API responds or on API failure  */
+    --primary:        #111827;
+    --secondary:      #374151;
+    --accent:         #d4af37;
+    --background:     #f8fafc;
+    --surface:        #ffffff;
+    --border:         #e5e7eb;
+    --text:           #111827;
+    --text-secondary: #6b7280;
+    --success:        #059669;
+    --warning:        #d97706;
+    --danger:         #dc2626;
+    --info:           #2563eb;
+    --hero-from:      #0f172a;
+    --hero-to:        #111827;
 }
 
 :root[data-theme="light"] {

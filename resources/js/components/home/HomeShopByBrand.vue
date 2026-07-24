@@ -42,8 +42,8 @@ const { target, inView } = useIntersectionObserver({ threshold: 0.15 });
     min-height: 100%;
     border-radius: 1.5rem;
     background:
-        linear-gradient(135deg, rgba(15, 23, 42, .95), rgba(15, 23, 42, .84)),
-        radial-gradient(circle at top right, rgba(212, 175, 55, .22), transparent 36%);
+        linear-gradient(135deg, color-mix(in srgb, var(--hero-from) 95%, transparent), color-mix(in srgb, var(--hero-from) 84%, transparent)),
+        radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 22%, transparent), transparent 36%);
     padding: clamp(1.25rem, 3vw, 2rem);
     color: #fff;
     box-shadow: var(--premium-shadow-lg);

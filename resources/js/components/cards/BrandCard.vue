@@ -43,7 +43,7 @@ const brandLink = computed(() => `/${props.lang}/products?brand=${props.brand.sl
     width: 52px;
     height: 52px;
     border-radius: 1rem;
-    background: linear-gradient(135deg, var(--premium-ink), #272f3f);
+    background: linear-gradient(135deg, var(--hero-from), var(--hero-to));
     color: #fff;
     font-weight: 800;
     letter-spacing: .08em;

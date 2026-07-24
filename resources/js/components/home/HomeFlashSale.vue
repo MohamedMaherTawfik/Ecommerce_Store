@@ -147,7 +147,7 @@ const handleImageError = (event) => {
     display: block;
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #8f6a13 0%, #d4af37 100%);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 60%, #000) 0%, var(--accent) 100%);
 }
 
 @media (max-width: 1000px) {

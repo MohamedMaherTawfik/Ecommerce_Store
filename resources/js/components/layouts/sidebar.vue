@@ -1,5 +1,5 @@
 <template>
-  <aside class="w-64 bg-white shadow-lg min-h-screen fixed left-0 top-0">
+  <aside class="w-64 bg-white shadow-sm min-h-screen fixed left-0 top-0">
     <div class="p-6 border-b">
       <h2 class="text-xl font-bold text-green-600">Admin Panel</h2>
     </div>

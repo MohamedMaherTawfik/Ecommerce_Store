@@ -40,8 +40,8 @@ const localizedLink = (path) => String(path || "").replace("{lang}", props.lang)
     padding: clamp(1.5rem, 3vw, 3rem);
     border-radius: 2rem;
     background:
-        radial-gradient(circle at top right, rgba(212, 175, 55, .16), transparent 38%),
-        linear-gradient(135deg, #0f172a 0%, #111827 55%, #0b0f19 100%);
+        radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 16%, transparent), transparent 38%),
+        linear-gradient(135deg, var(--hero-from) 0%, var(--hero-to) 55%, color-mix(in srgb, var(--hero-from) 90%, #000) 100%);
     border: 1px solid rgba(255, 255, 255, .08);
     box-shadow: 0 28px 54px rgba(2, 6, 23, .28);
     color: #fff;

@@ -62,7 +62,7 @@ const initials = computed(() =>
     width: 42px;
     height: 42px;
     border-radius: 999px;
-    background: linear-gradient(135deg, var(--premium-ink), #2a3244);
+    background: linear-gradient(135deg, var(--hero-from), var(--hero-to));
     color: #fff;
     font-weight: 800;
 }

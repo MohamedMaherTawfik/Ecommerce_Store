@@ -4,6 +4,7 @@ import App from "./App.vue";
 import router from "./router";
 import i18n, { resolveLocale } from "./i18n/index";
 import { setInstallMode } from "./services/ApiClient";
+import themeManager from "./services/theme/themeManager";
 
 // ===============================
 // 🌙 Theme Init (IMPORTANT)
@@ -69,4 +70,10 @@ const pinia = createPinia();
 app.use(pinia);
 app.use(router);
 app.use(i18n);
-app.mount("#app");
+
+// ===============================
+// 🎨 Dynamic Theme — load palette once before mount
+// ===============================
+themeManager.init().finally(() => {
+    app.mount("#app");
+});

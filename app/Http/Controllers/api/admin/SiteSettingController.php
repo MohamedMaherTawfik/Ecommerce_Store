@@ -29,9 +29,12 @@ class SiteSettingController extends Controller
                     $items = SiteSetting::all();
 
                     $result = [];
+                    $imageKeys = ['navbar_image', 'footer_image', 'register_image', 'tab_icon', 'navbar_logo'];
                     foreach ($items as $item) {
                         $val = $item->value;
-                        if (is_string($val) && (str_starts_with($val, 'storage/') || str_starts_with($val, '/storage/'))) {
+                        if (in_array($item->key, $imageKeys) && is_string($val) && !str_starts_with($val, 'http')) {
+                            $val = asset(ltrim($val, '/'));
+                        } elseif (is_string($val) && (str_starts_with($val, 'storage/') || str_starts_with($val, '/storage/'))) {
                             $val = asset(ltrim($val, '/'));
                         }
                         $result[$item->key] = $val;
@@ -64,12 +67,21 @@ class SiteSettingController extends Controller
                 return $this->notFound('Site setting not found');
             }
 
-            $val = $setting->value;
-            if (is_string($val) && (str_starts_with($val, 'storage/') || str_starts_with($val, '/storage/'))) {
-                $setting->value = asset(ltrim($val, '/'));
+            // We must not mutate the cached object, so we clone or just modify a copy of the value.
+            // Wait, actually Laravel Cache sometimes caches the object reference.
+            // We can return a cloned array or model.
+            $data = $setting->toArray();
+
+            $val = $data['value'];
+            $imageKeys = ['navbar_image', 'footer_image', 'register_image', 'tab_icon', 'navbar_logo'];
+            
+            if (in_array($key, $imageKeys) && is_string($val) && !str_starts_with($val, 'http')) {
+                $data['value'] = asset(ltrim($val, '/'));
+            } elseif (is_string($val) && (str_starts_with($val, 'storage/') || str_starts_with($val, '/storage/'))) {
+                $data['value'] = asset(ltrim($val, '/'));
             }
 
-            return $this->success($setting, 'Site setting retrieved successfully');
+            return $this->success($data, 'Site setting retrieved successfully');
         } catch (\Throwable $e) {
             Log::error($e);
             return $this->error('Internal Server Error');
@@ -120,7 +132,12 @@ class SiteSettingController extends Controller
                 $path = $imageStorage->store($file, 'settings', 1200, 1200);
                 $setting->value = '/storage/' . $path;
             } else {
-                $setting->value = $request->validated()['value'];
+                $value = $request->validated()['value'];
+                $baseUrl = rtrim(asset(''), '/');
+                if (is_string($value) && str_starts_with($value, $baseUrl)) {
+                    $value = str_replace($baseUrl, '', $value);
+                }
+                $setting->value = $value;
             }
             $setting->save();
 
@@ -187,6 +204,10 @@ class SiteSettingController extends Controller
                 }
 
                 if ($value !== null && ! is_array($value)) {
+                    $baseUrl = rtrim(asset(''), '/');
+                    if (is_string($value) && str_starts_with($value, $baseUrl)) {
+                        $value = str_replace($baseUrl, '', $value);
+                    }
                     SiteSetting::updateOrCreate(['key' => $key], ['value' => $value]);
                 }
             }

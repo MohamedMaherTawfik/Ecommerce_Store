@@ -20,8 +20,8 @@ class ProductsFactory extends Factory
     public function definition(): array
     {
         return [
-            'categories_id' => Categories::inRandomOrder()->value('id'),
-            'brands_id' => brands::inRandomOrder()->value('id'),
+            'categorey_id' => Categories::inRandomOrder()->value('id'),
+            'brand_id' => brands::inRandomOrder()->value('id'),
 
             'name' => fake()->unique()->words(3, true),
             'image' => fake()->optional()->imageUrl(640, 480, 'products'),

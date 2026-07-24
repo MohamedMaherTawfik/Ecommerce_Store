@@ -286,7 +286,7 @@ const values = computed(() =>
 <style scoped>
 .about-page {
     background:
-        radial-gradient(circle at top left, rgba(196, 64, 58, 0.12), transparent 32%),
+        radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 12%, transparent), transparent 32%),
         radial-gradient(circle at top right, rgba(15, 23, 42, 0.08), transparent 34%),
         var(--sf-bg);
     color: var(--sf-text);
@@ -314,9 +314,9 @@ const values = computed(() =>
 .about-value-card,
 .about-highlight {
     border: 1px solid var(--sf-border);
-    background: rgba(255, 255, 255, 0.78);
-    box-shadow: var(--sf-shadow-lg);
-    backdrop-filter: blur(14px);
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: var(--sf-shadow-sm);
+    backdrop-filter: blur(10px);
 }
 
 [data-theme="dark"] .about-hero__copy,
@@ -324,7 +324,7 @@ const values = computed(() =>
 [data-theme="dark"] .about-feature-card,
 [data-theme="dark"] .about-value-card,
 [data-theme="dark"] .about-highlight {
-    background: rgba(15, 23, 42, 0.72);
+    background: rgba(15, 23, 42, 0.14);
 }
 
 .about-hero__copy {
@@ -336,7 +336,7 @@ const values = computed(() =>
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    color: #c4403a;
+    color: var(--primary);
     font-size: 0.8rem;
     font-weight: 800;
     letter-spacing: 0.14em;
@@ -403,9 +403,9 @@ const values = computed(() =>
 }
 
 .about-btn--primary {
-    background: #c4403a;
+    background: var(--primary);
     color: #fff;
-    box-shadow: 0 18px 34px rgba(196, 64, 58, 0.24);
+    box-shadow: 0 18px 34px color-mix(in srgb, var(--primary) 24%, transparent);
 }
 
 .about-btn--ghost {
@@ -425,22 +425,22 @@ const values = computed(() =>
     display: grid;
     gap: 1.2rem;
     background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.84)),
-        linear-gradient(135deg, rgba(196, 64, 58, 0.06), rgba(16, 24, 40, 0.06));
+        linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.10)),
+        linear-gradient(135deg, color-mix(in srgb, var(--primary) 6%, transparent), rgba(16, 24, 40, 0.06));
 }
 
 [data-theme="dark"] .about-hero__card {
     background:
-        linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.72)),
-        linear-gradient(135deg, rgba(196, 64, 58, 0.08), rgba(255, 255, 255, 0.04));
+        linear-gradient(180deg, rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.14)),
+        linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, transparent), rgba(255, 255, 255, 0.04));
 }
 
 .about-hero__badge {
     width: fit-content;
     padding: 0.45rem 0.8rem;
     border-radius: 999px;
-    background: rgba(196, 64, 58, 0.1);
-    color: #c4403a;
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
     font-size: 0.82rem;
     font-weight: 700;
 }
@@ -453,8 +453,8 @@ const values = computed(() =>
 .about-stat {
     padding: 1rem 1.1rem;
     border-radius: 1.2rem;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(196, 64, 58, 0.08);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
 [data-theme="dark"] .about-stat {
@@ -521,8 +521,8 @@ const values = computed(() =>
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(196, 64, 58, 0.1);
-    color: #c4403a;
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
     font-size: 1.3rem;
 }
 
@@ -562,13 +562,13 @@ const values = computed(() =>
 .about-cta__inner {
     padding: clamp(1.5rem, 4vw, 2.6rem);
     border-radius: 2rem;
-    background: linear-gradient(135deg, #101828 0%, #c4403a 100%);
+    background: linear-gradient(135deg, var(--hero-from) 0%, var(--hero-to) 100%);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1.2rem;
-    box-shadow: 0 24px 48px rgba(16, 24, 40, 0.24);
+    box-shadow: 0 12px 32px rgba(16, 24, 40, 0.08);
 }
 
 .about-cta p {

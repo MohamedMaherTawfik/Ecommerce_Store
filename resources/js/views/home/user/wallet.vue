@@ -208,7 +208,7 @@ onMounted(fetchWallet);
 
 .balance-card {
     padding: 1.1rem;
-    background: linear-gradient(145deg, color-mix(in srgb, var(--sf-primary) 80%, #0f172a), #0f172a);
+    background: linear-gradient(145deg, color-mix(in srgb, var(--primary) 80%, var(--hero-from)), var(--hero-from));
     border-color: transparent;
     color: #fff;
 }

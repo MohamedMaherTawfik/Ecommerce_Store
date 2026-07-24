@@ -179,8 +179,8 @@ onMounted(() => {
 <style scoped>
 .store-footer {
     margin-top: auto;
-    border-top: 1px solid var(--sf-border);
-    background: color-mix(in srgb, var(--sf-surface) 95%, transparent);
+    border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 95%, transparent);
 }
 
 .store-footer__inner {
@@ -199,14 +199,14 @@ onMounted(() => {
     margin: 0 0 0.85rem;
     font-size: 0.95rem;
     font-weight: 800;
-    color: var(--sf-text);
+    color: var(--text);
 }
 
 .store-footer p,
 .store-footer li,
 .store-footer small,
 .store-footer a {
-    color: var(--sf-muted);
+    color: var(--text-secondary);
     font-size: 0.86rem;
 }
 
@@ -224,7 +224,7 @@ onMounted(() => {
 }
 
 .store-footer a:hover {
-    color: var(--sf-text);
+    color: var(--text);
 }
 
 .brand-line {
@@ -238,13 +238,13 @@ onMounted(() => {
     width: 40px;
     height: 40px;
     border-radius: 0.75rem;
-    border: 1px solid var(--sf-border);
+    border: 1px solid var(--border);
     object-fit: cover;
 }
 
 .brand-line strong {
     font-size: 1.1rem;
-    color: var(--sf-text);
+    color: var(--text);
 }
 
 .socials {
@@ -257,9 +257,9 @@ onMounted(() => {
     width: 36px;
     height: 36px;
     border-radius: 0.7rem;
-    border: 1px solid var(--sf-border);
-    background: var(--sf-surface-soft);
-    color: var(--sf-text);
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--text);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -274,30 +274,30 @@ onMounted(() => {
 
 .newsletter input {
     min-height: 42px;
-    border: 1px solid var(--sf-border);
+    border: 1px solid var(--border);
     border-radius: 0.7rem;
-    background: var(--sf-surface-soft);
-    color: var(--sf-text);
+    background: var(--background);
+    color: var(--text);
     padding-inline: 0.7rem;
 }
 
 .newsletter input:focus {
     outline: none;
-    border-color: var(--sf-primary);
+    border-color: var(--primary);
 }
 
 .newsletter button {
     width: 42px;
     border: 0;
     border-radius: 0.7rem;
-    background: var(--sf-primary);
-    color: #fff;
+    background: var(--primary);
+    color: var(--surface);
 }
 
 .newsletter-success {
     display: inline-block;
     margin-top: 0.6rem;
-    color: var(--sf-success);
+    color: var(--success);
 }
 
 .stores {
@@ -311,14 +311,14 @@ onMounted(() => {
     width: auto;
     height: 36px;
     border-radius: 0.5rem;
-    border: 1px solid var(--sf-border);
-    background: #fff;
+    border: 1px solid var(--border);
+    background: var(--surface);
 }
 
 .store-footer__bottom {
     margin-top: 1.5rem;
     padding-top: 1rem;
-    border-top: 1px solid var(--sf-border);
+    border-top: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;

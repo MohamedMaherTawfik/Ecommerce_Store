@@ -59,10 +59,10 @@ class LayoutSeeder extends Seeder
 
         // ─── Site Settings ────────────────────────
         $settings = [
-            'navbar_image'   => '/images/logo.webp',
+            'navbar_image'   => '/images/ai_logo.webp',
             'footer_image'   => '/images/ai_logo.webp',
             'register_image' => '/images/ai_logo.webp',
-            'copyright'      => '© 2025 Ataa Foundation — All rights reserved',
+            'copyright'      => '© 2025 Emmy Store — All rights reserved',
             'google_play'    => '#',
             'app_store'      => '#',
         ];

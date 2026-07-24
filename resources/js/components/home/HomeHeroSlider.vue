@@ -137,8 +137,8 @@ const formatMoney = (value) =>
     position: absolute;
     inset: 0;
     background:
-        linear-gradient(90deg, rgba(2, 6, 23, .82) 0%, rgba(2, 6, 23, .44) 45%, rgba(2, 6, 23, .12) 100%),
-        linear-gradient(180deg, rgba(2, 6, 23, .2) 0%, rgba(2, 6, 23, .78) 100%);
+        linear-gradient(90deg, color-mix(in srgb, var(--hero-from) 82%, transparent) 0%, color-mix(in srgb, var(--hero-from) 44%, transparent) 45%, color-mix(in srgb, var(--hero-from) 12%, transparent) 100%),
+        linear-gradient(180deg, color-mix(in srgb, var(--hero-from) 20%, transparent) 0%, color-mix(in srgb, var(--hero-from) 78%, transparent) 100%);
 }
 
 .hero-slide__content {
@@ -226,7 +226,7 @@ const formatMoney = (value) =>
     border: 0;
     border-radius: 999px;
     background: rgba(255, 255, 255, .9);
-    color: var(--premium-ink);
+    color: var(--hero-from);
 }
 
 .hero-section__dots {

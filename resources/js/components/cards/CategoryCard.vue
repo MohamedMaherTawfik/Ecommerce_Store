@@ -55,7 +55,7 @@ const categoryLink = computed(() => `/${props.lang}/products/category/${props.ca
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(2, 6, 23, .08) 0%, rgba(2, 6, 23, .76) 100%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--hero-to) 8%, transparent) 0%, color-mix(in srgb, var(--hero-to) 76%, transparent) 100%);
 }
 
 .category-card__body,

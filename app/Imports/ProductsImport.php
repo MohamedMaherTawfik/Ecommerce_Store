@@ -59,7 +59,7 @@ class ProductsImport implements OnEachRow, SkipsOnFailure, WithChunkReading, Wit
                 'description' => $data['description'] ?? null,
                 'price' => (float) $data['price'],
                 'tax' => (float) ($data['tax'] ?? 0),
-                'categories_id' => $categoryId,
+                'categorey_id' => $categoryId,
                 'is_active' => $this->booleanValue($data['status'] ?? $data['is_active'] ?? true),
             ];
 

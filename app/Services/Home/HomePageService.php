@@ -47,8 +47,8 @@ class HomePageService
                     'slug',
                     'price',
                     'image',
-                    'categories_id',
-                    'brands_id',
+                    'categorey_id',
+                    'brand_id',
                     'description'
                 )
                     ->with(['category:id,name', 'brand:id,name', 'stocks:id,product_id,quantity'])
@@ -65,8 +65,8 @@ class HomePageService
                     'slug',
                     'price',
                     'image',
-                    'categories_id',
-                    'brands_id'
+                    'categorey_id',
+                    'brand_id'
                 )
                     ->with(['category:id,name', 'brand:id,name', 'stocks:id,product_id,quantity'])
                     ->withCount('reviews')

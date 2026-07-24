@@ -48,8 +48,8 @@ const subscribe = async () => {
     padding: clamp(1.5rem, 4vw, 3rem);
     border-radius: 2rem;
     background:
-        radial-gradient(circle at top right, rgba(212, 175, 55, .12), transparent 34%),
-        linear-gradient(135deg, #0f172a 0%, #111827 100%);
+        radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 12%, transparent), transparent 34%),
+        linear-gradient(135deg, var(--hero-from) 0%, var(--hero-to) 100%);
     border: 1px solid rgba(255, 255, 255, .08);
     color: #fff;
     box-shadow: var(--premium-shadow-lg);

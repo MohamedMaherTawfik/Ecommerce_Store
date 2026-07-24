@@ -132,7 +132,7 @@ const wishlisted = computed(() => wishlistStore.isWishlisted(props.product.id));
     align-items: center;
     padding: .35rem .65rem;
     border-radius: 999px;
-    background: rgba(15, 23, 42, .82);
+    background: color-mix(in srgb, var(--primary) 82%, transparent);
     color: #fff;
     font-size: .68rem;
     font-weight: 800;
@@ -151,7 +151,7 @@ const wishlisted = computed(() => wishlistStore.isWishlisted(props.product.id));
     height: 40px;
     border: 1px solid rgba(255, 255, 255, .18);
     border-radius: 999px;
-    background: rgba(15, 23, 42, .55);
+    background: color-mix(in srgb, var(--primary) 55%, transparent);
     color: #fff;
     backdrop-filter: blur(8px);
 }

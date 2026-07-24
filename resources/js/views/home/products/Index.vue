@@ -407,7 +407,7 @@ onMounted(async () => {
     font-size: 0.8rem;
     border-radius: 0.5rem;
     border: 1px solid var(--sf-border);
-    background: var(--sf-surface-soft, #f8f9fb);
+    background: var(--sf-surface-soft, var(--background));
     color: var(--sf-text);
     width: 100%;
     transition: border-color 0.15s;
@@ -475,7 +475,7 @@ onMounted(async () => {
 }
 
 .filters-actions .store-btn--soft {
-    background: var(--sf-surface-soft, #f1f3f6);
+    background: var(--sf-surface-soft, var(--surface));
     color: var(--sf-text);
     border: 1px solid var(--sf-border);
 }

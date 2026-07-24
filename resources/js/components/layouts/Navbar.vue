@@ -2,7 +2,7 @@
     <header class="store-nav" :dir="lang === 'ar' ? 'rtl' : 'ltr'">
         <div class="store-nav__inner">
             <RouterLink :to="`/${lang}`" class="store-nav__brand">
-                <img :src="layoutData.navbar?.logo || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARMAAAC3CAMAAAAGjUrGAAAAMFBMVEXx8/XCy9K/yND09vfw8vTP1tzp7O/i5ure4+fO1dvJ0dfT2d/EzNPt7/Lb4OXo6+4FeM7UAAAFL0lEQVR4nO2c24KrIAxFLdha7///t0dxOlWDSiAKztnrbR4G6SoJBKHZA6zJYncgQeCEAicUOKHACQVOKHBCgRMKnFDghAInFDihwAkFTihwQoETCpxQ4IQCJxQ4ocAJBU4ocEKBEwqcUOCEAicUOKHACQVOKHBCgRMKnFDghAInFDihwAkFTihwQoETCpxQ4IQCJxQ4ocAJBU4ot3Oi1KMq64FnWTVq+EueWzlRquqKVn/J+/ezEfdyHydKPYtc62yF1m1Xymq5ixPVdDnx8eslf1eCVu7hRFXFppAfLW39kNJyByeqOTJirGTvRsbKDZyozsHIpKUQsZK8E1Vu55GTrKTuRL0ZRoyVLviZaTtRVctUMuaVOnCoJO1E1WwjxsorbGZO2Qk7br5WuhApKTvpfZWMy5WAoZKuk6b1NhI4VJJ10uRBSsas0ng+OlUnVaARw9NvqCTqRERJpt9eUtJ0IqPEN36SdNIIKRnIPeafFJ0Ep9c5mr+qTdFJ2CRMpLAn5fScqJeokrFWZkoRdaImwtpw2T9iSnnxuiDoRFXda6hK28JzWTA14ryBxKFlTT9iTlT1W57o3Lta96yED8krRieknCw/DDuEP1TnKBlgzMlCTtZDXr+8pIjOwitK5x7JOKFD3mukiE85ix45S5FxYll46prdiv8ekpsU19wv4kS9LV1ouQPlrPzKliIzTuw9YDYiVfgFSxFx8rR+wcyMomSX9HYpTjlFwonqrB3gBc/JyYQjRcRJYe8Ay4l9rMlLcVi8iTjp7Y/nOBHcMjngWEoi4+TUlcmKw9rnxHzCWMqeU/ltkB9JEZl3SusnYmwQn1fm2GgPeiOzZrM9WZfu/3/BNDznYATLOLENffep+JppeMZBMSZUF9N6ljFM7KF3qpTduBZyQj4W53XTiRsEm1L2dr2k9k9W9Rtjq2BrJj9Zyk7pI7bP9lw8kfH+4KIFLGF77Sa3R90Un0POvHNCcYzsLVMk9+2buni1bd9xjMSJHMPmjCz7zov/fidW5GQ7OS/2e8BoRrLtrBfXScTIMVLsk09cJxEjZ8I6+cR1EmG1tsRaDsZ0EjlyDL0leuxOpulD4JTALtfXORRbnqVO1LDOePdtpoclWPsqulL+wt0P0SNnxFKrrp2opmuXl+5OuHA3PSmByDGQ9ezSydYdM+ELd4YUIsdANnoWTva2RSUv3JlnJRE5I2RbY+6kee1+dTrrhC7cPTZeMUdivZnydaIc3tdqqWuI6USOYZlSfp0oxzVlJxNByUSOYZlSPk6cDzqEXy17JDTn/LBMKRlTSRZ4X2giep2zZnEwZHLiGjifFt6BTtKKHMMspUxO2BkvDzoDm1jkGGa7bsaJx0t9XfgrOfuMlhezwsc48RrKufvhyiXXHatg8T2Zkm0eHzluxO8W4pXHKljkXycBt3h9blFdeqyCx2fPOguLbn6qTWsBu+Czxs/CopsdP4kmkx+mcZ8FRrfuWUqSTSYT005keDucW4iXnzRhMg17iYacC6A0VyZzzIQs0pBrUrn22JoXY4Us0pDjaZMzb+dIMX6/Qi0dHSU0XHySz48heqSaOs60vsvlq2mtpzj9OCh/Trgjew7afgLar63d6ec2SmTZm37+UyV7048K+Gmkm7O10A/8aaSbY7sEr8rYvYoNnX4Sr3EuYJVpVc35Ccu/innZbryMJ1n4v9f4N9FZ39XPZ931GYzMGH9VPHYfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADp8Q9+nG9anuOrfAAAAABJRU5ErkJggg=='"
+                <img :src="layoutData.navbar?.value || 'images/ai_logo.webp'"
                     :alt="`${layoutData.navbar?.brand || 'EliteShop'} logo`" width="38" height="38"
                     decoding="async" fetchpriority="high" />
                 <span>{{ layoutData.navbar?.brand || 'EliteShop' }}</span>
@@ -29,9 +29,9 @@
                 <button class="lang-btn" type="button" @click="toggleLanguage">
                     {{ lang === 'ar' ? 'EN' : 'AR' }}
                 </button>
-                <button class="icon-btn" type="button" @click="toggleTheme" :title="t('nav.theme')">
+                <!-- <button class="icon-btn" type="button" @click="toggleTheme" :title="t('nav.theme')">
                     <i class="bi" :class="theme === 'dark' ? 'bi-sun' : 'bi-moon'"></i>
-                </button>
+                </button> -->
 
                 <RouterLink v-if="isLoggedIn" class="icon-btn" :to="`/${lang}/wishlist`" :title="t('nav.wishlist')">
                     <i class="bi bi-heart"></i>
@@ -309,9 +309,9 @@ onMounted(async () => {
     position: sticky;
     top: 0;
     z-index: 1040;
-    border-bottom: 1px solid var(--sf-border);
-    background: var(--nav-bg);
-    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    backdrop-filter: blur(10px);
 }
 
 .store-nav__inner {
@@ -328,7 +328,7 @@ onMounted(async () => {
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
-    color: var(--sf-text);
+    color: var(--text);
     text-decoration: none;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -339,7 +339,7 @@ onMounted(async () => {
     height: 38px;
     border-radius: 0.7rem;
     object-fit: cover;
-    border: 1px solid var(--sf-border);
+    border: 1px solid var(--border);
 }
 
 .store-nav__links {
@@ -350,7 +350,7 @@ onMounted(async () => {
 .store-nav__link {
     padding: 0.45rem 0.6rem;
     border-radius: 0.7rem;
-    color: var(--sf-muted);
+    color: var(--text-secondary);
     font-size: 0.87rem;
     font-weight: 600;
     text-decoration: none;
@@ -359,8 +359,8 @@ onMounted(async () => {
 
 .store-nav__link:hover,
 .store-nav__link.is-active {
-    color: var(--sf-text);
-    background: var(--sf-surface-soft);
+    color: var(--text);
+    background: var(--background);
 }
 
 .store-nav__search {
@@ -371,21 +371,21 @@ onMounted(async () => {
     gap: 0.5rem;
     min-height: 40px;
     border-radius: 0.8rem;
-    border: 1px solid var(--sf-border);
-    background: var(--sf-surface);
+    border: 1px solid var(--border);
+    background: var(--surface);
     padding-inline: 0.75rem;
-    box-shadow: var(--sf-shadow-sm);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
 .store-nav__search i {
-    color: var(--sf-muted);
+    color: var(--text-secondary);
     font-size: 0.92rem;
 }
 
 .store-nav__search input {
     border: 0;
     background: transparent;
-    color: var(--sf-text);
+    color: var(--text);
     font-size: 0.9rem;
 }
 
@@ -404,10 +404,10 @@ onMounted(async () => {
     position: relative;
     width: 40px;
     height: 40px;
-    border: 1px solid var(--sf-border);
+    border: 1px solid var(--border);
     border-radius: 0.75rem;
-    background: var(--sf-surface);
-    color: var(--sf-text);
+    background: var(--surface);
+    color: var(--text);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -416,7 +416,7 @@ onMounted(async () => {
 }
 
 .icon-btn:hover {
-    background: var(--sf-surface-soft);
+    background: var(--background);
 }
 
 .count-badge {
@@ -426,8 +426,8 @@ onMounted(async () => {
     min-width: 18px;
     height: 18px;
     border-radius: 999px;
-    background: #dc2626;
-    color: #fff;
+    background: var(--danger);
+    color: var(--surface);
     font-size: 0.68rem;
     font-weight: 700;
     display: inline-flex;
@@ -446,9 +446,9 @@ onMounted(async () => {
     min-height: 40px;
     padding: 0.45rem 0.6rem;
     border-radius: 0.75rem;
-    border: 1px solid var(--sf-border);
-    background: var(--sf-surface);
-    color: var(--sf-text);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
@@ -458,9 +458,9 @@ onMounted(async () => {
 }
 
 .auth-btn {
-    background: var(--sf-primary);
-    border-color: var(--sf-primary);
-    color: #fff;
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--surface);
 }
 
 .user-menu {
@@ -468,10 +468,10 @@ onMounted(async () => {
     top: calc(100% + 8px);
     right: 0;
     min-width: 180px;
-    border: 1px solid var(--sf-border);
+    border: 1px solid var(--border);
     border-radius: 0.85rem;
-    background: var(--sf-surface);
-    box-shadow: var(--sf-shadow-lg);
+    background: var(--surface);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 8%, transparent);
     overflow: hidden;
 }
 
@@ -479,7 +479,7 @@ onMounted(async () => {
     width: 100%;
     border: 0;
     background: transparent;
-    color: var(--sf-text);
+    color: var(--text);
     text-align: start;
     padding: 0.7rem 0.85rem;
     text-decoration: none;
@@ -488,11 +488,11 @@ onMounted(async () => {
 }
 
 .user-menu__item:hover {
-    background: var(--sf-surface-soft);
+    background: var(--background);
 }
 
 .user-menu__item--danger {
-    color: var(--sf-danger);
+    color: var(--danger);
 }
 
 .store-nav__mobile-search,
@@ -537,9 +537,9 @@ onMounted(async () => {
 }
 
 .lang-btn {
-    border: 1px solid #9ca3af;
-    background: rgb(255, 255, 255);
-    color: var(--text-color);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
     padding: 0 10px;
     border-radius: 12px;
     font-weight: 700;
@@ -552,8 +552,8 @@ onMounted(async () => {
 
 .lang-btn:hover {
     transform: translateY(-1px);
-    background: rgba(255, 255, 255, 0.15);
-    border-color: #d1d5db;
+    background: var(--background);
+    border-color: var(--primary);
 }
 
 /* Bottom Navigation */
@@ -562,9 +562,9 @@ onMounted(async () => {
     bottom: 0;
     left: 0;
     right: 0;
-    background: #ffffff;
-    border-top: 1px solid var(--sf-border, #eaeaea);
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 10px color-mix(in srgb, var(--primary) 5%, transparent);
     display: flex;
     justify-content: center;
     gap: clamp(1.2rem, 5vw, 2rem);
@@ -580,7 +580,7 @@ onMounted(async () => {
     align-items: center;
     justify-content: center;
     gap: 0.25rem;
-    color: var(--sf-muted, #6c757d);
+    color: var(--text-secondary);
     text-decoration: none;
     font-size: 0.75rem;
     font-weight: 600;
@@ -597,17 +597,17 @@ onMounted(async () => {
 
 .bottom-nav__item.is-active,
 .bottom-nav__item:hover {
-    color: var(--sf-primary, #0d6efd);
+    color: var(--primary);
 }
 
 .bottom-nav__more-menu {
     position: absolute;
     bottom: calc(100% + 0.5rem);
     right: 1rem;
-    background: var(--sf-surface, #ffffff);
-    border: 1px solid var(--sf-border, #eaeaea);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 0.85rem;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 -4px 12px color-mix(in srgb, var(--primary) 10%, transparent);
     padding: 0.5rem;
     display: flex;
     flex-direction: column;
@@ -617,7 +617,7 @@ onMounted(async () => {
 
 .bottom-nav__more-item {
     padding: 0.7rem 1rem;
-    color: var(--sf-text, #212529);
+    color: var(--text);
     text-decoration: none;
     font-size: 0.85rem;
     font-weight: 600;
@@ -628,8 +628,8 @@ onMounted(async () => {
 
 .bottom-nav__more-item.is-active,
 .bottom-nav__more-item:hover {
-    background: var(--sf-surface-soft, #f8f9fa);
-    color: var(--sf-primary, #0d6efd);
+    background: var(--background);
+    color: var(--primary);
 }
 
 @media (max-width: 767.98px) {

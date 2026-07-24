@@ -381,7 +381,7 @@ defineExpose({
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    color: #1877f2;
+    color: var(--info);
     font-weight: 700;
     font-size: 0.92rem;
 }
@@ -693,9 +693,9 @@ defineExpose({
     border-radius: 1.6rem;
     background:
         radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 24%),
-        linear-gradient(135deg, #4f46e5 0%, #6d28d9 48%, #7c3aed 100%);
+        linear-gradient(135deg, var(--primary) 0%, var(--accent) 48%, color-mix(in srgb, var(--primary) 60%, var(--accent)) 100%);
     color: #fff;
-    box-shadow: 0 18px 42px rgba(76, 29, 149, 0.26);
+    box-shadow: 0 18px 42px color-mix(in srgb, var(--primary) 26%, transparent);
     text-align: inherit;
     transition: transform .24s ease, box-shadow .24s ease, filter .24s ease;
 }
@@ -703,7 +703,7 @@ defineExpose({
 .reels-banner:hover,
 .reels-banner:focus-visible {
     transform: translateY(-2px);
-    box-shadow: 0 22px 52px rgba(76, 29, 149, 0.34);
+    box-shadow: 0 22px 52px color-mix(in srgb, var(--primary) 34%, transparent);
     filter: saturate(1.02);
     outline: none;
 }
@@ -729,7 +729,7 @@ defineExpose({
 
 .reels-banner__chip--light {
     background: rgba(255, 255, 255, 0.92);
-    color: #4c1d95;
+    color: var(--primary);
 }
 
 .reels-banner__body {
