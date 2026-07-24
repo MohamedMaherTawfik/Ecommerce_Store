@@ -43,6 +43,7 @@ use App\Http\Controllers\api\home\CartController;
 use App\Http\Controllers\api\home\CategoryController as HomeCategoryController;
 use App\Http\Controllers\api\home\CheckoutController;
 use App\Http\Controllers\api\home\HomeContentController;
+use App\Http\Controllers\api\home\HomePalleteController;
 use App\Http\Controllers\api\home\InvoiceController;
 use App\Http\Controllers\api\home\InvoiceController as HomeInvoiceController;
 use App\Http\Controllers\api\home\LayoutController;
@@ -173,6 +174,13 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/reply', [HomeTicketController::class, 'reply'])->whereNumber('id');
             Route::patch('/{id}/status', [HomeTicketController::class, 'updateStatus'])->whereNumber('id');
         });
+    });
+
+    Route::prefix('palletes')->group(function () {
+        Route::get('/', [HomePalleteController::class,'index']);
+        Route::post('/', [HomePalleteController::class,'create']);
+        Route::get('/{pallete}', [HomePalleteController::class,'show']);
+        Route::post('/{pallete}', [HomePalleteController::class,'update']);
     });
 
     Route::get('/paypal/success', [PaymentController::class, 'success'])->name('paypal.success')->withoutMiddleware(ApiKeyMiddleware::class);
