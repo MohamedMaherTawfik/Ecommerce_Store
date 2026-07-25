@@ -89,7 +89,7 @@
                                                     :help="field.help"
                                                     :options="field.options"
                                                     :disabled="submitting"
-                                                    :fullWidth="['GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URL', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'PAYPAL_SANDBOX_CLIENT_SECRET', 'PAYPAL_LIVE_CLIENT_SECRET', 'MAIL_PASSWORD', 'AWS_SECRET_ACCESS_KEY'].includes(field.key)"
+                                                    :fullWidth="['GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URL', 'PAYMOB_SECRET_KEY', 'PAYMOB_HMAC_SECRET', 'MAIL_PASSWORD', 'AWS_SECRET_ACCESS_KEY'].includes(field.key)"
                                                 >
                                                     <template v-if="field.key === 'GOOGLE_REDIRECT_URL'">
                                                         <label class="application-settings__switch" style="margin-top: 10px;">

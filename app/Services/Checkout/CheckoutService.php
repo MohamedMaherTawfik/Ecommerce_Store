@@ -6,17 +6,16 @@ use App\Models\Addresses;
 use App\Models\Cart;
 use App\Models\OrderItems;
 use App\Models\Orders;
-use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\Shipment;
+use App\Notifications\AdminNewOrderNotification;
+use App\Notifications\OrderPlacedNotification;
 use App\Services\Home\CartPricingService;
 use App\Services\Home\OrderTimelineService;
 use App\Services\Payment\PaymentGatewayManager;
-use App\Notifications\AdminNewOrderNotification;
-use App\Notifications\OrderPlacedNotification;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -30,8 +29,7 @@ class CheckoutService
         private readonly PaymentGatewayManager $payments,
         private readonly OrderTimelineService $timeline,
         private readonly InvoiceService $invoices,
-    ) {
-    }
+    ) {}
 
     public function summary(int $userId): array
     {
@@ -51,7 +49,10 @@ class CheckoutService
             'selected_address' => $address,
             'available_shipping_methods' => $totals['shipping']['rates'],
             'selected_shipping' => $totals['shipping']['selected'],
-            'available_payment_methods' => PaymentMethod::where('is_active', true)->orderBy('sort_order')->get(),
+            'available_payment_methods' => PaymentMethod::where('code', 'paymob')
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get(),
             'currency' => $totals['currency'],
         ];
     }
@@ -96,7 +97,7 @@ class CheckoutService
                 'order_number' => $this->generateOrderNumber(),
                 'status' => 'pending',
                 'order_status' => 'pending',
-                'payment_method' => $data['payment_method'] ?? 'paypal',
+                'payment_method' => 'paymob',
                 'payment_status' => 'pending',
                 'shipping_status' => 'pending',
                 'refund_status' => 'none',
@@ -112,7 +113,7 @@ class CheckoutService
                 'total' => $totals['grand_total'],
                 'currency' => $totals['currency'],
                 'phone' => $address->phone,
-                'address' => trim(($address->street ?? $address->address ?? '') . ' ' . ($address->building_no ?? '')),
+                'address' => trim(($address->street ?? $address->address ?? '').' '.($address->building_no ?? '')),
                 'city' => $address->city,
                 'country' => $address->country ?: 'Egypt',
                 'notes' => $data['notes'] ?? null,
@@ -170,7 +171,7 @@ class CheckoutService
             $this->timeline->log($order, 'pending', null, $userId, 'Checkout order placed.');
             $this->invoices->createForOrder($order->fresh(['user']));
 
-            $paymentResult = $this->payments->resolve($data['payment_method'] ?? 'paypal')->pay([
+            $paymentResult = $this->payments->resolve('paymob')->pay([
                 ...$data,
                 'user_id' => $userId,
                 'order' => $order->fresh(['items.product', 'user']),
@@ -221,7 +222,7 @@ class CheckoutService
         }
 
         $cart = $query->first();
-        if (!$cart || $cart->items->isEmpty()) {
+        if (! $cart || $cart->items->isEmpty()) {
             throw ValidationException::withMessages(['cart' => ['Cart is empty.']]);
         }
 
@@ -241,7 +242,7 @@ class CheckoutService
     private function generateOrderNumber(): string
     {
         do {
-            $number = 'ORD-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6));
+            $number = 'ORD-'.now()->format('YmdHis').'-'.Str::upper(Str::random(6));
         } while (Orders::where('order_number', $number)->exists());
 
         return $number;

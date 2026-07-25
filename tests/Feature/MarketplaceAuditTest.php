@@ -8,20 +8,13 @@ use App\Models\Cart;
 use App\Models\CartItems;
 use App\Models\Categories;
 use App\Models\Coupon;
-use App\Models\OrderItems;
-use App\Models\Orders;
 use App\Models\Products;
-use App\Models\Reviews;
 use App\Models\Stock;
 use App\Models\User;
-use App\Models\Wishlist;
-use App\Services\PayPalServices;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Facades\Socialite;
@@ -68,16 +61,16 @@ class MarketplaceAuditTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.data.0.name', 'Urban Loom');
 
-        $this->api()->getJson('/api/v1/products?category_id=' . $category->id . '&brand_id=' . $brand->id . '&sort=price_asc')
+        $this->api()->getJson('/api/v1/products?category_id='.$category->id.'&brand_id='.$brand->id.'&sort=price_asc')
             ->assertOk()
             ->assertJsonPath('data.0.name', 'Cotton Tee');
 
-        $this->api()->getJson('/api/v1/products/' . $matching->id)
+        $this->api()->getJson('/api/v1/products/'.$matching->id)
             ->assertOk()
             ->assertJsonPath('data.id', $matching->id)
             ->assertJsonPath('data.stock', 10);
 
-        $this->api()->getJson('/api/v1/products/' . $matching->id . '/related')
+        $this->api()->getJson('/api/v1/products/'.$matching->id.'/related')
             ->assertOk()
             ->assertJsonPath('data.0.id', $other->id);
 
@@ -101,7 +94,7 @@ class MarketplaceAuditTest extends TestCase
             'email' => $email,
         ])->assertOk();
 
-        $otp = Cache::get('otp_' . $email);
+        $otp = Cache::get('otp_'.$email);
         $this->assertNotNull($otp);
         Mail::assertQueued(OtpMail::class, fn (OtpMail $mail) => $mail->otp === $otp);
 
@@ -130,7 +123,7 @@ class MarketplaceAuditTest extends TestCase
         $this->assertNotEmpty($loginToken);
 
         $headers = [
-            'Authorization' => 'Bearer ' . $loginToken,
+            'Authorization' => 'Bearer '.$loginToken,
         ];
 
         $this->api()->withHeaders($headers)->getJson('/api/v1/users/profile')
@@ -167,7 +160,7 @@ class MarketplaceAuditTest extends TestCase
         $this->api()->withHeaders($headers)->getJson('/api/v1/users/profile')
             ->assertStatus(401);
 
-        $this->api()->withHeaders(['Authorization' => 'Bearer ' . $token])->getJson('/api/v1/users/profile')
+        $this->api()->withHeaders(['Authorization' => 'Bearer '.$token])->getJson('/api/v1/users/profile')
             ->assertStatus(401);
 
         $reLogin = $this->api()->postJson('/api/v1/users/login', [
@@ -176,7 +169,7 @@ class MarketplaceAuditTest extends TestCase
         ])->assertOk();
         $reLoginToken = (string) $reLogin->json('data.token');
 
-        $this->api()->withHeaders(['Authorization' => 'Bearer ' . $reLoginToken])->deleteJson('/api/v1/users/delete-account')
+        $this->api()->withHeaders(['Authorization' => 'Bearer '.$reLoginToken])->deleteJson('/api/v1/users/delete-account')
             ->assertOk();
 
     }
@@ -190,7 +183,7 @@ class MarketplaceAuditTest extends TestCase
 
         $token = $user->createToken('deleted-user')->plainTextToken;
 
-        $this->api()->withHeaders(['Authorization' => 'Bearer ' . $token])->deleteJson('/api/v1/users/delete-account')
+        $this->api()->withHeaders(['Authorization' => 'Bearer '.$token])->deleteJson('/api/v1/users/delete-account')
             ->assertOk();
 
         $this->api()->postJson('/api/v1/users/login', [
@@ -213,7 +206,8 @@ class MarketplaceAuditTest extends TestCase
         $this->api()->get('/api/v1/users/google-login')
             ->assertRedirect('https://accounts.google.com/mock');
 
-        $googleUser = new class () {
+        $googleUser = new class
+        {
             public function getEmail(): string
             {
                 return 'google.qa@example.com';
@@ -272,9 +266,9 @@ class MarketplaceAuditTest extends TestCase
         ]);
 
         $token = $user->createToken('qa-token')->plainTextToken;
-        $headers = ['Authorization' => 'Bearer ' . $token];
+        $headers = ['Authorization' => 'Bearer '.$token];
 
-        $this->api()->withHeaders($headers)->postJson('/api/v1/cart/addToCart/' . $product->id, [
+        $this->api()->withHeaders($headers)->postJson('/api/v1/cart/addToCart/'.$product->id, [
             'quantity' => 1,
             'size' => 'L',
             'color' => 'black',
@@ -284,20 +278,20 @@ class MarketplaceAuditTest extends TestCase
 
         $cartItem = CartItems::firstOrFail();
 
-        $this->api()->withHeaders($headers)->postJson('/api/v1/cart/addToCart/' . $product->id, [
+        $this->api()->withHeaders($headers)->postJson('/api/v1/cart/addToCart/'.$product->id, [
             'quantity' => 1,
             'size' => 'L',
             'color' => 'black',
         ])->assertOk()
             ->assertJsonPath('data.items.0.quantity', 2);
 
-        $this->api()->withHeaders($headers)->putJson('/api/v1/cart/items/' . $cartItem->id, [
+        $this->api()->withHeaders($headers)->putJson('/api/v1/cart/items/'.$cartItem->id, [
             'quantity' => 3,
         ])->assertOk()
             ->assertJsonPath('data.items.0.quantity', 3)
             ->assertJsonPath('data.total', 150);
 
-        $this->api()->withHeaders($headers)->putJson('/api/v1/cart/items/' . $cartItem->id, [
+        $this->api()->withHeaders($headers)->putJson('/api/v1/cart/items/'.$cartItem->id, [
             'quantity' => 99,
         ])->assertStatus(422);
 
@@ -325,37 +319,37 @@ class MarketplaceAuditTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.coupon', null);
 
-        $this->api()->withHeaders($headers)->deleteJson('/api/v1/cart/delete/' . $cartItem->id)
+        $this->api()->withHeaders($headers)->deleteJson('/api/v1/cart/delete/'.$cartItem->id)
             ->assertOk();
 
         $this->api()->withHeaders($headers)->deleteJson('/api/v1/cart/clearCart')
             ->assertOk();
 
-        $this->api()->withHeaders($headers)->postJson('/api/v1/wishlist/' . $product->id)
+        $this->api()->withHeaders($headers)->postJson('/api/v1/wishlist/'.$product->id)
             ->assertOk()
             ->assertJsonPath('data.wishlisted', true);
 
-        $this->api()->withHeaders($headers)->postJson('/api/v1/wishlist/' . $product->id)
+        $this->api()->withHeaders($headers)->postJson('/api/v1/wishlist/'.$product->id)
             ->assertOk()
             ->assertJsonPath('data.wishlisted', false);
 
-        $this->api()->withHeaders($headers)->deleteJson('/api/v1/wishlist/' . $product->id)
+        $this->api()->withHeaders($headers)->deleteJson('/api/v1/wishlist/'.$product->id)
             ->assertOk();
 
-        $this->api()->withHeaders($headers)->postJson('/api/v1/products/' . $product->id . '/reviews', [
+        $this->api()->withHeaders($headers)->postJson('/api/v1/products/'.$product->id.'/reviews', [
             'rating' => 5,
             'comment' => 'Excellent product.',
         ])->assertOk()
             ->assertJsonPath('data.rating', 5);
 
-        $this->api()->withHeaders($headers)->postJson('/api/v1/products/' . $product->id . '/reviews', [
+        $this->api()->withHeaders($headers)->postJson('/api/v1/products/'.$product->id.'/reviews', [
             'rating' => 4,
             'comment' => 'Still good after retest.',
         ])->assertOk();
 
         $this->assertDatabaseCount('reviews', 1);
 
-        $this->api()->withHeaders($headers)->postJson('/api/v1/products/' . $product->id . '/reviews', [
+        $this->api()->withHeaders($headers)->postJson('/api/v1/products/'.$product->id.'/reviews', [
             'rating' => 6,
             'comment' => 'Invalid rating should fail.',
         ])->assertStatus(422);
@@ -371,11 +365,27 @@ class MarketplaceAuditTest extends TestCase
         ]);
     }
 
-    public function test_payment_flow_handles_cash_on_delivery_and_mocked_paypal_behaviour(): void
+    public function test_payment_flow_initializes_paymob_unified_checkout(): void
     {
+        config([
+            'payment.gateways.paymob.enabled' => true,
+            'payment.gateways.paymob.base_url' => 'https://accept.paymob.com',
+            'payment.gateways.paymob.secret_key' => 'paymob-secret',
+            'payment.gateways.paymob.public_key' => 'paymob-public',
+            'payment.gateways.paymob.hmac_secret' => 'paymob-hmac',
+            'payment.gateways.paymob.currency' => 'EGP',
+            'payment.gateways.paymob.integration_ids.card' => 12345,
+        ]);
+        Http::fake([
+            'accept.paymob.com/v1/intention/' => Http::response([
+                'id' => 'int_marketplace_1',
+                'client_secret' => 'cs_marketplace_1',
+            ]),
+        ]);
+
         $user = User::factory()->create();
         $token = $user->createToken('checkout-token')->plainTextToken;
-        $headers = ['Authorization' => 'Bearer ' . $token];
+        $headers = ['Authorization' => 'Bearer '.$token];
 
         $product = Products::factory()->create([
             'price' => 80,
@@ -396,19 +406,29 @@ class MarketplaceAuditTest extends TestCase
             'color' => 'black',
         ]);
 
-        $cashOnDelivery = $this->api()->withHeaders($headers)->postJson('/api/v1/pay', [
-            'payment_method' => 'cash_on_delivery',
+        $checkout = $this->api()->withHeaders($headers)->postJson('/api/v1/pay', [
+            'payment_method' => 'paymob',
+            'payment_channel' => 'card',
             'phone' => '01000000000',
             'address' => '12 Market Street',
             'city' => 'Cairo',
             'country' => 'Egypt',
         ])->assertOk();
 
-        $codOrderId = (int) $cashOnDelivery->json('data.order_id');
+        $orderId = (int) $checkout->json('data.order_id');
+        $this->assertStringContainsString(
+            '/unifiedcheckout/?publicKey=paymob-public&clientSecret=cs_marketplace_1',
+            (string) $checkout->json('data.payment_url')
+        );
         $this->assertDatabaseHas('orders', [
-            'id' => $codOrderId,
-            'payment_method' => 'cash_on_delivery',
+            'id' => $orderId,
+            'payment_method' => 'paymob',
             'payment_status' => 'pending',
+        ]);
+        $this->assertDatabaseHas('payments', [
+            'order_id' => $orderId,
+            'gateway' => 'paymob',
+            'gateway_order_id' => 'int_marketplace_1',
         ]);
         $this->assertDatabaseCount('order_items', 1);
         $this->assertDatabaseMissing('cart_items', ['cart_id' => $cart->id]);
@@ -417,138 +437,17 @@ class MarketplaceAuditTest extends TestCase
             'quantity' => 2,
         ]);
 
-        $paypalUser = User::factory()->create();
-        $paypalToken = $paypalUser->createToken('paypal-token')->plainTextToken;
-        $paypalHeaders = ['Authorization' => 'Bearer ' . $paypalToken];
-
-        $paypalProduct = Products::factory()->create([
-            'price' => 30,
-            'is_active' => true,
-        ]);
-        Stock::create([
-            'product_id' => $paypalProduct->id,
-            'quantity' => 6,
-        ]);
-
-        $paypalCart = Cart::create(['user_id' => $paypalUser->id]);
-        CartItems::create([
-            'cart_id' => $paypalCart->id,
-            'product_id' => $paypalProduct->id,
-            'quantity' => 1,
-            'price' => 30,
-            'size' => 'M',
-            'color' => 'navy',
-        ]);
-
-        $fakePaypal = Mockery::mock(PayPalServices::class);
-        $fakePaypal->shouldReceive('pay')->andReturnUsing(function (array $data): array {
-            $item = CartItems::query()->latest('id')->firstOrFail();
-            $order = Orders::create([
-                'user_id' => $data['user_id'],
-                'order_number' => 'ORD-FAKE-' . str()->upper(str()->random(6)),
-                'status' => 'pending',
-                'payment_method' => 'paypal',
-                'payment_status' => 'pending',
-                'idempotency_key' => $data['idempotency_key'] ?? null,
-                'subtotal' => 30,
-                'tax' => 0,
-                'shipping_cost' => 0,
-                'discount' => 0,
-                'total' => 30,
-                'phone' => $data['phone'],
-                'address' => $data['address'],
-                'city' => $data['city'] ?? null,
-                'country' => $data['country'] ?? 'Egypt',
-                'notes' => $data['notes'] ?? null,
-                'paypal_order_id' => 'PAYPAL-QA-001',
-            ]);
-
-            OrderItems::create([
-                'order_id' => $order->id,
-                'product_id' => $item->product_id,
-                'quantity' => $item->quantity,
-                'price' => 30,
-            ]);
-
-            return [
-                'order' => $order->fresh(),
-                'approval_url' => 'https://paypal.test/approve',
-            ];
-        });
-        $fakePaypal->shouldReceive('success')->andReturnUsing(function (string $token): array {
-            $order = Orders::where('paypal_order_id', $token)->firstOrFail();
-            $order->update([
-                'status' => 'paid',
-                'payment_status' => 'paid',
-                'transaction_id' => 'CAPTURE-001',
-                'paid_at' => now(),
-            ]);
-
-            return [
-                'success' => true,
-                'message' => 'Payment captured.',
-                'order' => $order->fresh(),
-            ];
-        });
-        $fakePaypal->shouldReceive('cancelByToken')->andReturnUsing(function (?string $token): array {
-            if ($token) {
-                Orders::where('paypal_order_id', $token)->update(['payment_status' => 'cancelled']);
-            }
-
-            return [
-                'success' => false,
-                'message' => 'Payment was cancelled by the user.',
-            ];
-        });
-        $fakePaypal->shouldReceive('handleWebhook')->andReturnNull();
-
-        app()->instance(PayPalServices::class, $fakePaypal);
-
-        $paypalCheckout = $this->api()->withHeaders($paypalHeaders)->postJson('/api/v1/pay', [
-            'payment_method' => 'paypal',
-            'phone' => '01000000000',
-            'address' => '12 Market Street',
-            'city' => 'Cairo',
-            'country' => 'Egypt',
-            'idempotency_key' => 'paypal-qa-1',
-        ])->assertOk();
-
-        $paypalOrderId = (int) $paypalCheckout->json('data.order_id');
-        $this->assertSame('https://paypal.test/approve', $paypalCheckout->json('data.approval_url'));
-        $this->assertDatabaseHas('orders', [
-            'id' => $paypalOrderId,
-            'paypal_order_id' => 'PAYPAL-QA-001',
-            'payment_method' => 'paypal',
-        ]);
-
-        $this->api()->withHeaders($paypalHeaders)->get('/api/v1/paypal/success?token=PAYPAL-QA-001')
-            ->assertRedirect('/en/orders/' . $paypalOrderId);
-
-        $this->api()->withHeaders($paypalHeaders)->getJson('/api/v1/order/status/' . $paypalOrderId)
+        $this->api()->withHeaders($headers)->getJson('/api/v1/order/status/'.$orderId)
             ->assertOk()
-            ->assertJsonPath('data.status', 'paid')
-            ->assertJsonPath('data.payment_status', 'paid');
-
-        $this->api()->withHeaders($paypalHeaders)->getJson('/api/v1/paypal/cancel?token=PAYPAL-QA-002')
-            ->assertOk()
-            ->assertJsonPath('success', false);
-
-        $this->call('POST', '/api/v1/paypal/webhook', [], [], [], ['CONTENT_TYPE' => 'application/json'], '{invalid')
-            ->assertStatus(400);
-
-        $this->api()->withHeaders($headers)->postJson('/api/v1/paypal/webhook', [
-            'event_type' => 'CHECKOUT.ORDER.APPROVED',
-            'resource' => [
-                'id' => 'PAYPAL-QA-001',
-            ],
-        ])->assertStatus(500);
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('data.payment_status', 'pending');
     }
 
     public function test_public_products_and_wishlist_return_404_for_missing_products(): void
     {
         $user = User::factory()->create();
         $token = $user->createToken('public-token')->plainTextToken;
-        $headers = ['Authorization' => 'Bearer ' . $token];
+        $headers = ['Authorization' => 'Bearer '.$token];
 
         $this->api()->getJson('/api/v1/products/999999')
             ->assertStatus(404)
@@ -572,26 +471,15 @@ class MarketplaceAuditTest extends TestCase
     public function test_unverified_payment_webhooks_are_rejected(): void
     {
         config([
-            'services.stripe.webhook_secret' => 'whsec_test',
-            'services.paymob.hmac_secret' => 'paymob-secret',
-            'services.myfatoorah.webhook_secret' => 'myfatoorah-secret',
+            'payment.gateways.paymob.hmac_secret' => 'paymob-secret',
         ]);
-
-        $this->postJson('/api/v1/webhooks/stripe', ['type' => 'payment_intent.succeeded'])
-            ->assertStatus(400)
-            ->assertJsonPath('message', 'Invalid Stripe webhook signature.');
 
         $this->postJson('/api/v1/webhooks/paymob', ['obj' => ['id' => 123]])
             ->assertStatus(400)
             ->assertJsonPath('message', 'Invalid Paymob webhook signature.');
 
-        $this->withHeader('X-MyFatoorah-Signature', 'invalid')
-            ->postJson('/api/v1/webhooks/myfatoorah', ['Event' => 'PaymentStatusChanged'])
+        $this->postJson('/api/v1/webhooks/paymob?hmac=invalid', ['obj' => ['id' => 124]])
             ->assertStatus(400)
-            ->assertJsonPath('message', 'Invalid MyFatoorah webhook signature.');
-
-        $this->postJson('/api/v1/webhooks/bioneer', ['event' => 'payment'])
-            ->assertStatus(501)
-            ->assertJsonPath('message', 'Bioneer/Payoneer gateway is not implemented.');
+            ->assertJsonPath('message', 'Invalid Paymob webhook signature.');
     }
 }

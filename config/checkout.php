@@ -1,11 +1,10 @@
 <?php
 
 return [
-    'currency' => env('CHECKOUT_CURRENCY', env('PAYPAL_CURRENCY', 'USD')),
+    'currency' => env('CHECKOUT_CURRENCY', env('PAYMOB_CURRENCY', 'EGP')),
     'tax_enabled' => env('TAX_ENABLED', true),
     'shipping_enabled' => env('SHIPPING_ENABLED', true),
     'flat_rate' => (float) env('DEFAULT_FLAT_SHIPPING_RATE', 10),
-    'cod_confirms_order' => env('COD_CONFIRMS_ORDER', false),
     'stock_deduction_mode' => env('STOCK_DEDUCTION_MODE', 'order_placement'),
     'restore_stock_on_cancel' => env('RESTORE_STOCK_ON_CANCEL', true),
     'restore_stock_on_return' => env('RESTORE_STOCK_ON_RETURN', true),

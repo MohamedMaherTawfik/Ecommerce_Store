@@ -55,6 +55,24 @@
     "adding": "Adding…",
     "added": "Added to cart."
   },
+  "payment": {
+    "choose_method": "Choose a payment method",
+    "secured_by_paymob": "Secure payment powered by Paymob Unified Checkout.",
+    "unavailable": "Unavailable",
+    "load_error": "Unable to load payment methods.",
+    "card": {
+      "label": "Cards",
+      "description": "Visa, Mastercard, and Meeza when enabled"
+    },
+    "apple_pay": {
+      "label": "Apple Pay",
+      "description": "Fast checkout on supported Apple devices"
+    },
+    "mobile_wallet": {
+      "label": "Mobile Wallets",
+      "description": "Vodafone Cash, Orange Cash, e& cash, WE Pay, and more"
+    }
+  },
   "footer": {
     "quick_links": "Quick Links",
     "support": "Support & Contact",

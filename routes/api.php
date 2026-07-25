@@ -57,7 +57,6 @@ use App\Http\Controllers\api\InstallerController;
 use App\Http\Controllers\api\payment\PaymentCallbackController;
 use App\Http\Controllers\api\payment\PaymentController;
 use App\Http\Controllers\api\webhook\PaymentWebhookController;
-use App\Http\Controllers\api\webhook\WebhookController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\ApiKeyMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -114,10 +113,10 @@ Route::prefix('v1')->group(function () {
     Route::withoutMiddleware(ApiKeyMiddleware::class)->group(function () {
         Route::prefix('products')->group(function () {
             Route::get('/', [HomeProductController::class, 'index']);
-            Route::get('/latest-four', [HomeProductController::class,'latestFour']);
-            Route::get('/random-three', [HomeProductController::class,'randomThree']);
-            Route::get('/random-four', [HomeProductController::class,'randomFour']);
-            Route::get('/featured', [HomeProductController::class,'featured']);
+            Route::get('/latest-four', [HomeProductController::class, 'latestFour']);
+            Route::get('/random-three', [HomeProductController::class, 'randomThree']);
+            Route::get('/random-four', [HomeProductController::class, 'randomFour']);
+            Route::get('/featured', [HomeProductController::class, 'featured']);
             Route::get('/{product}', [HomeProductController::class, 'show']);
             Route::get('/{product}/related', [HomeProductController::class, 'related']);
         });
@@ -177,32 +176,18 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::prefix('palletes')->group(function () {
-        Route::get('/', [HomePalleteController::class,'index']);
-        Route::post('/', [HomePalleteController::class,'create']);
-        Route::get('/{pallete}', [HomePalleteController::class,'show']);
-        Route::post('/{pallete}', [HomePalleteController::class,'update']);
+        Route::get('/', [HomePalleteController::class, 'index']);
+        Route::post('/', [HomePalleteController::class, 'create']);
+        Route::get('/{pallete}', [HomePalleteController::class, 'show']);
+        Route::post('/{pallete}', [HomePalleteController::class, 'update']);
     });
 
-    Route::get('/paypal/success', [PaymentController::class, 'success'])->name('paypal.success')->withoutMiddleware(ApiKeyMiddleware::class);
-    Route::get('/paypal/cancel', [PaymentController::class, 'cancel'])->name('paypal.cancel')->withoutMiddleware(ApiKeyMiddleware::class);
-    Route::post('/paypal/webhook', [WebhookController::class, 'handle'])->name('paypal.webhook')->withoutMiddleware(ApiKeyMiddleware::class);
-    Route::get('/payment/{gateway}/success', [PaymentCallbackController::class, 'success'])
-        ->name('payment.success')
-        ->withoutMiddleware(ApiKeyMiddleware::class);
-    Route::get('/payment/{gateway}/cancel', [PaymentCallbackController::class, 'cancel'])
-        ->name('payment.cancel')
-        ->withoutMiddleware(ApiKeyMiddleware::class);
-    Route::post('/webhooks/stripe', [PaymentWebhookController::class, 'stripe'])
-        ->name('webhook.stripe')
+    Route::match(['get', 'post'], '/payment/paymob/callback', [PaymentCallbackController::class, 'paymob'])
+        ->name('payment.paymob.callback')
         ->withoutMiddleware(ApiKeyMiddleware::class);
     Route::post('/webhooks/paymob', [PaymentWebhookController::class, 'paymob'])
         ->name('webhook.paymob')
         ->withoutMiddleware(ApiKeyMiddleware::class);
-    Route::post('/webhooks/myfatoorah', [PaymentWebhookController::class, 'myfatoorah'])
-        ->name('webhook.myfatoorah')
-        ->withoutMiddleware(ApiKeyMiddleware::class);
-    Route::post('/webhooks/paypal', [WebhookController::class, 'handle'])->withoutMiddleware(ApiKeyMiddleware::class);
-    Route::post('/webhooks/bioneer', [PaymentWebhookController::class, 'bioneer'])->withoutMiddleware(ApiKeyMiddleware::class);
 });
 
 Route::prefix('admin')->group(function () {

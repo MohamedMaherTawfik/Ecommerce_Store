@@ -73,39 +73,16 @@ class SettingsService
                 Config::set('app.name', $settings['APP_NAME']);
             }
 
-            // Stripe/PayPal can be overridden similarly
-            if (! empty($settings['STRIPE_PUBLIC_KEY'])) {
-                Config::set('services.stripe.public_key', $settings['STRIPE_PUBLIC_KEY']);
-                Config::set('services.stripe.secret_key', $settings['STRIPE_SECRET_KEY'] ?? null);
-                Config::set('services.stripe.webhook_secret', $settings['STRIPE_WEBHOOK_SECRET'] ?? null);
-                Config::set('services.stripe.currency', $settings['STRIPE_CURRENCY'] ?? 'usd');
-                Config::set('services.stripe.enabled', filter_var($settings['STRIPE_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN));
-            }
-
             if (! empty($settings['PAYMOB_SECRET_KEY'])) {
-                Config::set('services.paymob.secret_key', $settings['PAYMOB_SECRET_KEY']);
-                Config::set('services.paymob.public_key', $settings['PAYMOB_PUBLIC_KEY'] ?? null);
-                Config::set('services.paymob.integration_id', $settings['PAYMOB_INTEGRATION_ID'] ?? null);
-                Config::set('services.paymob.hmac_secret', $settings['PAYMOB_HMAC_SECRET'] ?? null);
-                Config::set('services.paymob.currency', $settings['PAYMOB_CURRENCY'] ?? 'EGP');
-                Config::set('services.paymob.base_url', $settings['PAYMOB_BASE_URL'] ?? 'https://accept.paymob.com');
-                Config::set('services.paymob.enabled', filter_var($settings['PAYMOB_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN));
-            }
-
-            if (! empty($settings['MYFATOORAH_API_KEY'])) {
-                Config::set('services.myfatoorah.api_key', $settings['MYFATOORAH_API_KEY']);
-                Config::set('services.myfatoorah.base_url', $settings['MYFATOORAH_BASE_URL'] ?? 'https://apitest.myfatoorah.com');
-                Config::set('services.myfatoorah.country_iso', $settings['MYFATOORAH_COUNTRY_ISO'] ?? 'KWT');
-                Config::set('services.myfatoorah.currency', $settings['MYFATOORAH_CURRENCY'] ?? 'KWD');
-                Config::set('services.myfatoorah.webhook_secret', $settings['MYFATOORAH_WEBHOOK_SECRET'] ?? null);
-                Config::set('services.myfatoorah.enabled', filter_var($settings['MYFATOORAH_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN));
-            }
-
-            if (! empty($settings['PAYPAL_CLIENT_ID'])) {
-                Config::set('paypal.sandbox.client_id', $settings['PAYPAL_CLIENT_ID']);
-                Config::set('paypal.sandbox.client_secret', $settings['PAYPAL_SECRET']);
-                Config::set('paypal.live.client_id', $settings['PAYPAL_CLIENT_ID']);
-                Config::set('paypal.live.client_secret', $settings['PAYPAL_SECRET']);
+                Config::set('payment.gateways.paymob.secret_key', $settings['PAYMOB_SECRET_KEY']);
+                Config::set('payment.gateways.paymob.public_key', $settings['PAYMOB_PUBLIC_KEY'] ?? null);
+                Config::set('payment.gateways.paymob.integration_ids.card', $settings['PAYMOB_INTEGRATION_ID_CARD'] ?? null);
+                Config::set('payment.gateways.paymob.integration_ids.mobile_wallet', $settings['PAYMOB_INTEGRATION_ID_WALLET'] ?? null);
+                Config::set('payment.gateways.paymob.integration_ids.apple_pay', $settings['PAYMOB_INTEGRATION_ID_APPLE_PAY'] ?? null);
+                Config::set('payment.gateways.paymob.hmac_secret', $settings['PAYMOB_HMAC_SECRET'] ?? null);
+                Config::set('payment.gateways.paymob.currency', $settings['PAYMOB_CURRENCY'] ?? 'EGP');
+                Config::set('payment.gateways.paymob.base_url', $settings['PAYMOB_BASE_URL'] ?? 'https://accept.paymob.com');
+                Config::set('payment.gateways.paymob.enabled', filter_var($settings['PAYMOB_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN));
             }
         } catch (\Exception $e) {
             // Silently fail during initial setups or migrations

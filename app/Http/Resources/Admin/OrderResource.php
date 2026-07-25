@@ -33,13 +33,14 @@ class OrderResource extends JsonResource
             'billing_address_snapshot' => $this->billing_address_snapshot,
             'shipping_snapshot' => $this->shipping_snapshot,
             'tax_snapshot' => $this->tax_snapshot,
-            'paypal' => [
-                'paypal_order_id' => $this->paypal_order_id,
-                'transaction_id' => $this->transaction_id,
-                'payer_email' => $this->payer_email,
-                'paid_at' => $this->paid_at?->toISOString(),
-                'mail_sent' => (bool) $this->mail_sent,
-            ],
+            'payment' => $this->whenLoaded('latestPayment', fn () => [
+                'gateway' => $this->latestPayment?->gateway,
+                'channel' => data_get($this->latestPayment?->metadata, 'payment_channel'),
+                'intention_id' => $this->latestPayment?->gateway_order_id,
+                'transaction_id' => $this->latestPayment?->transaction_id,
+                'status' => $this->latestPayment?->status,
+                'paid_at' => $this->latestPayment?->paid_at?->toISOString(),
+            ]),
             'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user?->id,
                 'name' => $this->user?->name,

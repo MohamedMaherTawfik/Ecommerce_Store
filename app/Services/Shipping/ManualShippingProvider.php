@@ -14,7 +14,7 @@ class ManualShippingProvider implements ShippingProviderInterface
             'carrier' => 'Manual',
             'service' => 'Manual Shipping',
             'amount' => (float) ($data['amount'] ?? 0),
-            'currency' => $data['currency'] ?? config('paypal.currency', 'USD'),
+            'currency' => $data['currency'] ?? config('checkout.currency', 'EGP'),
         ]];
     }
 

@@ -7,9 +7,9 @@
                         <i class="bi bi-credit-card"></i>
                         Payments
                     </div>
-                    <h2 class="admin-page-title">Manage PayPal orders with confidence</h2>
+                    <h2 class="admin-page-title">Manage Paymob payments with confidence</h2>
                     <p class="admin-page-description">
-                        Review payment status, customer details, PayPal transactions, and order totals from one focused table.
+                        Review payment status, customer details, Paymob transactions, and order totals from one focused table.
                     </p>
                 </div>
             </section>
@@ -67,7 +67,7 @@
                         </div>
                         <h3 class="admin-empty-state__title">No orders found</h3>
                         <p class="admin-empty-state__text">
-                            Adjust filters or wait for the next PayPal checkout to appear here.
+                            Adjust filters or wait for the next Paymob checkout to appear here.
                         </p>
                     </div>
 
@@ -98,11 +98,11 @@
                                             {{ labelStatus(order.payment_status) }}
                                         </span>
                                         <div class="admin-table__secondary">
-                                            {{ order.paypal?.transaction_id || "No transaction yet" }}
+                                            {{ order.payment?.transaction_id || "No transaction yet" }}
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="payments-total">{{ formatMoney(order.total) }}</div>
+                                        <div class="payments-total">{{ formatMoney(order.total, order.currency) }}</div>
                                     </td>
                                     <td>{{ formatDate(order.created_at) }}</td>
                                     <td>
@@ -247,9 +247,9 @@ const statusClass = (status) => ({
 
 const labelStatus = (status) => status ? status.replace("_", " ") : "pending";
 
-const formatMoney = (value) => new Intl.NumberFormat("en-US", {
+const formatMoney = (value, currency = "EGP") => new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
 }).format(Number(value || 0));
 
 const formatDate = (value) => {

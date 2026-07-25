@@ -12,7 +12,6 @@ use App\Services\Home\CartPricingService;
 use App\Services\Home\OrderTimelineService;
 use App\Services\Home\StockService;
 use App\Services\Payment\PaymentGatewayManager;
-use App\Services\PayPalServices;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,45 +36,19 @@ class PaymentController extends Controller
     public function pay(CheckoutRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $method = $validated['payment_method'] ?? 'paypal';
-
+        $method = 'paymob';
+        $validated['payment_method'] = $method;
         $validated['user_id'] = $request->user()->id;
 
         try {
-            if ($method === 'cash_on_delivery') {
-                $order = $this->createCashOnDeliveryOrder($validated);
-
-                return $this->apiSuccess([
-                    'order_id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'payment_status' => $order->payment_status,
-                    'total' => $order->total,
-                    'payment_method' => $order->payment_method,
-                ], 'Order created successfully.');
-            }
-
-            if ($method === 'paypal') {
-                ['order' => $order, 'approval_url' => $approvalUrl] = app(PayPalServices::class)->pay($validated);
-
-                return $this->apiSuccess([
-                    'order_id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'payment_status' => $order->payment_status,
-                    'total' => $order->total,
-                    'approval_url' => $approvalUrl,
-                    'payment_url' => $approvalUrl,
-                ], 'Payment initialized successfully.');
-            }
-
             Log::info('Cart before checkout', ['user_id' => $validated['user_id'], 'method' => $method]);
 
-            return DB::transaction(function () use ($validated, $method) {
-                $order = $this->createOnlinePaymentOrder($validated, $method);
-                
-                Log::info('Order created', ['order_id' => $order->id, 'order_number' => $order->order_number]);
-                Log::info('Cart before payment initialization', ['order_id' => $order->id]);
+            return DB::transaction(function () use ($validated) {
+                $order = $this->createOnlinePaymentOrder($validated);
 
-                $payment = app(PaymentGatewayManager::class)->resolve($method)->pay([
+                Log::info('Order created', ['order_id' => $order->id, 'order_number' => $order->order_number]);
+
+                $payment = app(PaymentGatewayManager::class)->resolve('paymob')->pay([
                     ...$validated,
                     'order' => $order->fresh(['items.product', 'user']),
                 ]);
@@ -97,34 +70,6 @@ class PaymentController extends Controller
 
             return $this->apiError($e->getMessage(), 422);
         }
-    }
-
-    public function success(Request $request)
-    {
-        $token = $request->query('token');
-
-        if (! $token) {
-            return $this->apiError('PayPal token missing.', 400);
-        }
-
-        try {
-            $result = app(PayPalServices::class)->success($token);
-            $order = $result['order'];
-
-            return redirect('/en/orders/'.$order->id);
-        } catch (Exception $e) {
-            Log::error('PayPal success callback failed', [
-                'token' => $token,
-                'message' => $e->getMessage(),
-            ]);
-
-            return $this->apiError($e->getMessage(), 422);
-        }
-    }
-
-    public function cancel(Request $request): JsonResponse
-    {
-        return response()->json(app(PayPalServices::class)->cancelByToken($request->query('token')));
     }
 
     public function orderStatus(Request $request, int $id): JsonResponse
@@ -150,7 +95,7 @@ class PaymentController extends Controller
         ], 'Order status retrieved successfully.');
     }
 
-    private function createCashOnDeliveryOrder(array $data): Orders
+    private function createOnlinePaymentOrder(array $data): Orders
     {
         return DB::transaction(function () use ($data) {
             $cart = Cart::where('user_id', $data['user_id'])
@@ -163,89 +108,22 @@ class PaymentController extends Controller
             }
 
             $items = $cart->items->filter(fn ($item) => $item->product && $item->quantity > 0);
-
             if ($items->isEmpty()) {
                 throw new Exception('Cart has no valid items.');
             }
 
             $this->stock->ensureAvailable($items);
             $totals = $this->pricing->totals($cart);
-
-            $order = Orders::create([
-                'user_id' => $data['user_id'],
-                'order_number' => $this->generateOrderNumber(),
-                'status' => 'pending',
-                'payment_method' => 'cash_on_delivery',
-                'payment_status' => 'pending',
-                'idempotency_key' => $data['idempotency_key'] ?? null,
-                'subtotal' => $totals['subtotal'],
-                'tax' => 0,
-                'shipping_cost' => 0,
-                'discount' => $totals['discount'],
-                'total' => $totals['total'],
-                'phone' => $data['phone'],
-                'address' => $data['address'],
-                'city' => $data['city'] ?? null,
-                'country' => $data['country'] ?? 'Egypt',
-                'notes' => $data['notes'] ?? null,
-            ]);
-
-            foreach ($items as $item) {
-                OrderItems::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item->product_id,
-                    'quantity' => $item->quantity,
-                    'price' => round((float) $item->product->price * (int) $item->quantity, 2),
-                ]);
-            }
-
-            $this->stock->reduce($items);
-            $this->timeline->log($order, 'pending', null, $data['user_id'], 'Cash on delivery order created.');
-
-            if ($cart->coupon) {
-                $cart->coupon->increment('used_count');
-            }
-
-            $cart->items()->delete();
-            $cart->update(['coupon_id' => null, 'discount' => 0]);
-
-            return $order;
-        });
-    }
-
-    private function createOnlinePaymentOrder(array $data, string $method): Orders
-    {
-        return DB::transaction(function () use ($data, $method) {
-            $cart = Cart::where('user_id', $data['user_id'])
-                ->with(['items.product', 'coupon'])
-                ->lockForUpdate()
-                ->first();
-
-            if (! $cart || $cart->items->isEmpty()) {
-                throw new Exception('Cart is empty.');
-            }
-
-            $items = $cart->items->filter(fn ($item) => $item->product && $item->quantity > 0);
-            if ($items->isEmpty()) {
-                throw new Exception('Cart has no valid items.');
-            }
-
-            $this->stock->ensureAvailable($items);
-            $totals = $this->pricing->totals($cart);
-            // Resolve currency from the payment gateway's own config so that
-            // gateway-specific currencies (e.g. EGP for Paymob) are honoured.
-            // Fall back to the generic checkout currency only when the gateway
-            // does not define one.
             $currency = strtoupper((string) (
-                config("services.{$method}.currency")
-                ?: config('checkout.currency', 'USD')
+                config('payment.gateways.paymob.currency')
+                ?: config('checkout.currency', 'EGP')
             ));
             $order = Orders::create([
                 'user_id' => $data['user_id'],
                 'order_number' => $this->generateOrderNumber(),
                 'status' => 'pending',
                 'order_status' => 'pending',
-                'payment_method' => $method,
+                'payment_method' => 'paymob',
                 'payment_status' => 'pending',
                 'shipping_status' => 'pending',
                 'refund_status' => 'none',
@@ -297,7 +175,7 @@ class PaymentController extends Controller
                 $this->stock->reduce($items);
             }
 
-            $this->timeline->log($order, 'pending', null, $data['user_id'], ucfirst($method).' payment order created.');
+            $this->timeline->log($order, 'pending', null, $data['user_id'], 'Paymob payment order created.');
 
             if ($cart->coupon) {
                 $cart->coupon->increment('used_count');

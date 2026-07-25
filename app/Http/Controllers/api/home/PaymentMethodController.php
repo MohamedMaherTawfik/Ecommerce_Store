@@ -4,7 +4,6 @@ namespace App\Http\Controllers\api\home;
 
 use App\Http\Controllers\concerns\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Models\PaymentMethod;
 
 class PaymentMethodController extends Controller
 {
@@ -12,10 +11,20 @@ class PaymentMethodController extends Controller
 
     public function index()
     {
-        $methods = PaymentMethod::where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'name', 'code', 'provider', 'mode', 'settings']);
+        $channels = collect(config('payment.channels'))
+            ->map(function (array $channel, string $code) {
+                return [
+                    'code' => $code,
+                    ...$channel,
+                    'available' => config('payment.gateways.paymob.enabled')
+                        && filled(config("payment.gateways.paymob.integration_ids.{$code}")),
+                ];
+            })
+            ->values();
 
-        return $this->success($methods, 'Payment methods loaded successfully.');
+        return $this->success([
+            'gateway' => 'paymob',
+            'channels' => $channels,
+        ], 'Paymob payment methods loaded successfully.');
     }
 }

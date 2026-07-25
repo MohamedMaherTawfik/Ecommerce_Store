@@ -12,7 +12,7 @@ class FlatRateShippingProvider extends ManualShippingProvider
             'carrier' => 'Flat Rate',
             'service' => 'Standard',
             'amount' => (float) ($data['rate'] ?? config('checkout.flat_rate', 10)),
-            'currency' => $data['currency'] ?? config('paypal.currency', 'USD'),
+            'currency' => $data['currency'] ?? config('checkout.currency', 'EGP'),
         ]];
     }
 }

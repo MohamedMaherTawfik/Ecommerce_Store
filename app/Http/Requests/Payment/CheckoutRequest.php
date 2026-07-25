@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Payment;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class CheckoutRequest extends FormRequest
 {
@@ -15,13 +14,8 @@ class CheckoutRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_method' => ['nullable', Rule::in([
-                'paypal',
-                'cash_on_delivery',
-                'stripe',
-                'paymob',
-                'myfatoorah',
-            ])],
+            'payment_method' => ['nullable', 'in:paymob'],
+            'payment_channel' => ['required', 'in:card,apple_pay,mobile_wallet'],
             'phone' => ['required', 'string', 'max:50'],
             'address' => ['required', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],

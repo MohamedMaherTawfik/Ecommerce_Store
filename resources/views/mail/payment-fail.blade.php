@@ -28,7 +28,7 @@
             <!-- Info Box -->
             <div style="background:#f9fafb;padding:15px;border-radius:10px;margin:20px 0;">
                 <p style="margin:5px 0;"><strong>Attempted Amount:</strong> ${{ $amount }}</p>
-                <p style="margin:5px 0;"><strong>Payment Method:</strong> PayPal</p>
+                <p style="margin:5px 0;"><strong>Payment Method:</strong> Paymob</p>
                 <p style="margin:5px 0;"><strong>Status:</strong> Failed</p>
             </div>
 

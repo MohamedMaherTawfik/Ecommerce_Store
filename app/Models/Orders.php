@@ -10,6 +10,7 @@ class Orders extends Model
     use SoftDeletes;
 
     protected $table = 'orders';
+
     protected $fillable = [
         'user_id',
         'order_number',
@@ -28,9 +29,7 @@ class Orders extends Model
         'country',
         'notes',
         'delivered_at',
-        'paypal_order_id',
         'transaction_id',
-        'payer_email',
         'gateway_response',
         'paid_at',
         'mail_sent',

@@ -12,7 +12,7 @@ class FreeShippingProvider extends ManualShippingProvider
             'carrier' => 'Free Shipping',
             'service' => 'Free Shipping',
             'amount' => 0,
-            'currency' => $data['currency'] ?? config('paypal.currency', 'USD'),
+            'currency' => $data['currency'] ?? config('checkout.currency', 'EGP'),
         ]];
     }
 }

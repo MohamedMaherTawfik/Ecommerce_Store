@@ -8,6 +8,7 @@ use App\Models\Products;
 use App\Models\Stock;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -39,8 +40,24 @@ class CartAndCheckoutApiTest extends TestCase
             ->assertStatus(422);
     }
 
-    public function test_cash_on_delivery_checkout_creates_order_items_and_clears_cart(): void
+    public function test_paymob_checkout_creates_order_items_and_clears_cart(): void
     {
+        config([
+            'payment.gateways.paymob.enabled' => true,
+            'payment.gateways.paymob.base_url' => 'https://accept.paymob.com',
+            'payment.gateways.paymob.secret_key' => 'paymob-secret',
+            'payment.gateways.paymob.public_key' => 'paymob-public',
+            'payment.gateways.paymob.hmac_secret' => 'paymob-hmac',
+            'payment.gateways.paymob.integration_ids.card' => 12345,
+            'payment.gateways.paymob.currency' => 'EGP',
+        ]);
+        Http::fake([
+            'accept.paymob.com/v1/intention/' => Http::response([
+                'id' => 'int_cart_checkout',
+                'client_secret' => 'cs_cart_checkout',
+            ]),
+        ]);
+
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
@@ -55,13 +72,14 @@ class CartAndCheckoutApiTest extends TestCase
         ]);
 
         $this->withHeader('X-API-KEY', env('API_KEY'))->postJson('/api/v1/pay', [
-            'payment_method' => 'cash_on_delivery',
+            'payment_method' => 'paymob',
+            'payment_channel' => 'card',
             'phone' => '01000000000',
             'address' => '12 Market Street',
             'city' => 'Cairo',
         ])
             ->assertOk()
-            ->assertJsonPath('data.payment_method', 'cash_on_delivery')
+            ->assertJsonPath('data.gateway', 'paymob')
             ->assertJsonPath('data.total', 110);
 
         $this->assertDatabaseCount('order_items', 1);

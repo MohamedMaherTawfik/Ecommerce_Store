@@ -9,10 +9,8 @@ use App\Interfaces\HandlesPaymentWebhooks;
 use App\Models\Orders;
 use App\Models\Payment;
 use App\Models\PaymentWebhookLog;
-use App\Services\Payment\MyFatoorahPaymentService;
 use App\Services\Payment\PaymentStatusService;
 use App\Services\Payment\PaymobPaymentService;
-use App\Services\Payment\StripePaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -23,35 +21,12 @@ class PaymentWebhookController extends Controller
 {
     use ApiResponse;
 
-    public function stripe(
-        Request $request,
-        StripePaymentService $gateway,
-        PaymentStatusService $payments
-    ): JsonResponse {
-        return $this->process($request, $gateway, $payments);
-    }
-
     public function paymob(
         Request $request,
         PaymobPaymentService $gateway,
         PaymentStatusService $payments
     ): JsonResponse {
         return $this->process($request, $gateway, $payments);
-    }
-
-    public function myfatoorah(
-        Request $request,
-        MyFatoorahPaymentService $gateway,
-        PaymentStatusService $payments
-    ): JsonResponse {
-        return $this->process($request, $gateway, $payments);
-    }
-
-    public function bioneer(Request $request): JsonResponse
-    {
-        Log::warning('Bioneer webhook rejected because this gateway is not implemented.');
-
-        return $this->error('Bioneer/Payoneer gateway is not implemented.', 501);
     }
 
     private function process(
@@ -202,6 +177,17 @@ class PaymentWebhookController extends Controller
             }
         }
 
+        $paymobOrderId = (string) ($event['paymob_order_id'] ?? '');
+        if ($paymobOrderId !== '') {
+            $payment = Payment::where('gateway', 'paymob')
+                ->where('metadata->paymob_order_id', $paymobOrderId)
+                ->first();
+
+            if ($payment?->order) {
+                return $payment->order;
+            }
+        }
+
         $references = array_filter([
             'transaction_id' => (string) ($event['transaction_id'] ?? ''),
             'gateway_payment_id' => (string) ($event['gateway_payment_id'] ?? ''),
@@ -244,11 +230,10 @@ class PaymentWebhookController extends Controller
 
     private function gatewayName(HandlesPaymentWebhooks $gateway): string
     {
-        return match (true) {
-            $gateway instanceof StripePaymentService => 'stripe',
-            $gateway instanceof PaymobPaymentService => 'paymob',
-            $gateway instanceof MyFatoorahPaymentService => 'myfatoorah',
-            default => throw new RuntimeException('Unknown payment webhook gateway.'),
-        };
+        if (! $gateway instanceof PaymobPaymentService) {
+            throw new RuntimeException('Unknown payment webhook gateway.');
+        }
+
+        return 'paymob';
     }
 }

@@ -9,7 +9,7 @@
                     </div>
                     <h2 class="admin-page-title">{{ order?.order_number || "Loading order" }}</h2>
                     <p class="admin-page-description">
-                        Inspect the customer, PayPal transaction, item lines, and current payment state.
+                        Inspect the customer, Paymob transaction, item lines, and current payment state.
                     </p>
                 </div>
                 <div class="admin-page-actions">
@@ -54,7 +54,7 @@
                             </div>
                             <div>
                                 <dt>Total</dt>
-                                <dd class="payment-total">{{ formatMoney(order.total) }}</dd>
+                                <dd class="payment-total">{{ formatMoney(order.total, order.currency) }}</dd>
                             </div>
                         </dl>
                     </article>
@@ -85,24 +85,24 @@
 
                     <article class="payment-card admin-grid__item--6">
                         <div class="payment-card__header">
-                            <h3>PayPal info</h3>
+                            <h3>Paymob info</h3>
                         </div>
                         <dl class="payment-facts">
                             <div>
-                                <dt>PayPal order</dt>
-                                <dd>{{ order.paypal?.paypal_order_id || "-" }}</dd>
+                                <dt>Payment channel</dt>
+                                <dd>{{ labelStatus(order.payment?.channel) }}</dd>
                             </div>
                             <div>
                                 <dt>Transaction</dt>
-                                <dd>{{ order.paypal?.transaction_id || "-" }}</dd>
+                                <dd>{{ order.payment?.transaction_id || "-" }}</dd>
                             </div>
                             <div>
-                                <dt>Payer email</dt>
-                                <dd>{{ order.paypal?.payer_email || "-" }}</dd>
+                                <dt>Intention</dt>
+                                <dd>{{ order.payment?.intention_id || "-" }}</dd>
                             </div>
                             <div>
                                 <dt>Paid at</dt>
-                                <dd>{{ formatDate(order.paypal?.paid_at) }}</dd>
+                                <dd>{{ formatDate(order.payment?.paid_at) }}</dd>
                             </div>
                         </dl>
                     </article>
@@ -138,7 +138,7 @@
                             <h3 class="admin-panel__title">Items list</h3>
                             <p class="admin-panel__meta">Products captured when the order was created.</p>
                         </div>
-                        <strong class="payment-grand-total">{{ formatMoney(order.total) }}</strong>
+                        <strong class="payment-grand-total">{{ formatMoney(order.total, order.currency) }}</strong>
                     </div>
 
                     <div class="admin-panel__body">
@@ -167,7 +167,7 @@
                                         </td>
                                         <td>{{ item.product?.sku || "-" }}</td>
                                         <td>{{ item.quantity }}</td>
-                                        <td class="text-end payments-total">{{ formatMoney(item.price) }}</td>
+                                        <td class="text-end payments-total">{{ formatMoney(item.price, order.currency) }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -242,9 +242,9 @@ const statusClass = (status) => ({
 
 const labelStatus = (status) => status ? status.replace("_", " ") : "pending";
 
-const formatMoney = (value) => new Intl.NumberFormat("en-US", {
+const formatMoney = (value, currency = "EGP") => new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
 }).format(Number(value || 0));
 
 const formatDate = (value) => {

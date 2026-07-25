@@ -15,61 +15,94 @@ class PaymobPaymentService extends AbstractPaymentService implements HandlesPaym
 {
     protected string $gateway = 'paymob';
 
+    private const HMAC_FIELDS = [
+        'amount_cents',
+        'created_at',
+        'currency',
+        'error_occured',
+        'has_parent_transaction',
+        'id',
+        'integration_id',
+        'is_3d_secure',
+        'is_auth',
+        'is_capture',
+        'is_refunded',
+        'is_standalone_payment',
+        'is_voided',
+        'order.id',
+        'owner',
+        'pending',
+        'source_data.pan',
+        'source_data.sub_type',
+        'source_data.type',
+        'success',
+    ];
+
     public function pay(array $data): array
     {
-        $this->ensureConfigured(['secret_key', 'public_key', 'integration_id', 'hmac_secret']);
+        $this->ensureConfigured(['secret_key', 'public_key', 'hmac_secret']);
+
         $order = $this->order($data);
-        $currency = strtoupper((string) ($order->currency ?: config('services.paymob.currency', 'EGP')));
+        $channel = (string) ($data['payment_channel'] ?? 'card');
+        $integrationIds = $this->integrationIds($channel);
+        $currency = strtoupper((string) ($order->currency ?: config('payment.gateways.paymob.currency', 'EGP')));
         $amountCents = (int) round((float) $order->total * 100);
 
         $payload = [
             'amount' => $amountCents,
             'currency' => $currency,
-            'payment_methods' => [(int) config('services.paymob.integration_id')],
-            'items' => [],
+            'payment_methods' => $integrationIds,
+            'items' => [[
+                'name' => 'Order '.$order->order_number,
+                'amount' => $amountCents,
+                'description' => 'Ecommerce order '.$order->order_number,
+                'quantity' => 1,
+            ]],
             'billing_data' => $this->billingData($order),
             'customer' => $this->customerData($order),
+            'special_reference' => (string) $order->id,
+            'notification_url' => $this->webhookUrl(),
+            'redirection_url' => $this->paymobCallbackUrl(),
             'extras' => [
                 'order_id' => (string) $order->id,
+                'order_number' => (string) $order->order_number,
+                'payment_channel' => $channel,
             ],
         ];
 
-        Log::info('Paymob Unified API Request', [
-            'url' => rtrim((string) config('services.paymob.base_url'), '/') . '/v1/intention/',
-            'headers' => [
-                'Authorization' => 'Token ' . substr(config('services.paymob.secret_key'), 0, 15) . '***',
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ],
-            'payload' => $payload,
-            'integration_id_used' => config('services.paymob.integration_id'),
-            'currency_used' => $currency,
-            'amount_used' => $amountCents,
+        Log::info('Creating Paymob payment intention.', [
+            'order_id' => $order->id,
+            'amount_cents' => $amountCents,
+            'currency' => $currency,
+            'payment_channel' => $channel,
+            'integration_ids' => $integrationIds,
         ]);
 
-        $response = $this->http()->withHeaders([
-            'Authorization' => 'Token ' . config('services.paymob.secret_key'),
-        ])->post('/v1/intention/', $payload)->throw()->json();
+        $response = $this->http()
+            ->withHeaders(['Authorization' => 'Token '.config('payment.gateways.paymob.secret_key')])
+            ->post('/v1/intention/', $payload)
+            ->throw()
+            ->json();
 
         $clientSecret = (string) data_get($response, 'client_secret', '');
         $intentionId = (string) data_get($response, 'id', '');
+        $paymobOrderId = (string) data_get($response, 'intention_order_id', '');
 
-        if ($clientSecret === '') {
-            throw new RuntimeException('Paymob did not return a client_secret.');
+        if ($clientSecret === '' || $intentionId === '') {
+            throw new RuntimeException('Paymob did not return a complete payment intention.');
         }
 
-        $paymentUrl = rtrim((string) config('services.paymob.base_url'), '/')
-            . '/unifiedcheckout/?publicKey=' . config('services.paymob.public_key')
-            . '&clientSecret=' . $clientSecret;
+        $paymentUrl = rtrim((string) config('payment.gateways.paymob.base_url'), '/')
+            .'/unifiedcheckout/?publicKey='.urlencode((string) config('payment.gateways.paymob.public_key'))
+            .'&clientSecret='.urlencode($clientSecret);
 
-        $raw = [
-            'intention' => $response,
-        ];
-
+        $raw = ['intention' => $response];
         $metadata = [
             'order_id' => (string) $order->id,
             'intention_id' => $intentionId,
-            'integration_id' => (string) config('services.paymob.integration_id'),
+            'paymob_order_id' => $paymobOrderId,
+            'integration_ids' => $integrationIds,
+            'payment_channel' => $channel,
         ];
 
         $this->storePendingPayment($order, [
@@ -80,13 +113,14 @@ class PaymobPaymentService extends AbstractPaymentService implements HandlesPaym
             'metadata' => $metadata,
         ]);
 
-        return $this->successResult($paymentUrl, $intentionId, (string) $order->id, $raw);
+        return [
+            ...$this->successResult($paymentUrl, $intentionId, (string) $order->id, $raw),
+            'payment_channel' => $channel,
+        ];
     }
 
     public function success(string $token): array
     {
-        // Paymob Unified Checkout might pass 'id' or 'clientSecret' or 'transaction_id' in success URL
-        // PaymentCallbackController resolves it dynamically
         $payment = Payment::where('gateway', 'paymob')
             ->when($token !== '', function ($query) use ($token) {
                 $query->where(function ($query) use ($token) {
@@ -97,6 +131,7 @@ class PaymobPaymentService extends AbstractPaymentService implements HandlesPaym
                         ->orWhere('metadata->intention_id', $token);
                 });
             })
+            ->latest()
             ->first();
 
         return [
@@ -104,22 +139,20 @@ class PaymobPaymentService extends AbstractPaymentService implements HandlesPaym
             'gateway' => 'paymob',
             'status' => $payment?->status ?? 'pending',
             'order_id' => $payment?->order_id,
-            'message' => 'Paymob return received. Final status is confirmed by the signed callback.',
+            'message' => 'Paymob return received. The signed transaction callback is the payment source of truth.',
         ];
     }
 
     public function handleWebhook(Request $request): array
     {
         $this->ensureConfigured(['hmac_secret'], false);
-        
-        $providedHmac = $request->header('hmac') ?: $request->query('hmac') ?: $request->input('hmac', '');
-        $expectedHmac = hash_hmac('sha512', $request->getContent(), config('services.paymob.hmac_secret'));
 
-        if ($providedHmac === '' || !hash_equals($expectedHmac, strtolower($providedHmac))) {
-            throw new InvalidWebhookSignatureException('Invalid Paymob webhook signature.');
-        }
-
-        $object = $request->input('obj') ?: $request->except('hmac');
+        $object = (array) (
+            $request->input('obj')
+            ?: ($request->isMethod('get') ? $request->query() : $request->except('hmac'))
+        );
+        unset($object['hmac']);
+        $this->verifyHmac($request, $object);
 
         $pending = $this->boolean(data_get($object, 'pending'));
         $success = $this->boolean(data_get($object, 'success'));
@@ -129,36 +162,131 @@ class PaymobPaymentService extends AbstractPaymentService implements HandlesPaym
             $status = 'refunded';
         } elseif ($this->boolean(data_get($object, 'is_voided'))) {
             $status = 'cancelled';
-        } elseif ($success && !$pending) {
+        } elseif ($success && ! $pending) {
             $status = 'paid';
-        } elseif (!$success && !$pending) {
+        } elseif (! $success && ! $pending) {
             $status = 'failed';
         }
 
         $transactionId = (string) data_get($object, 'id', '');
-        $intentionId = (string) data_get($object, 'intention.id', '');
-        $merchantOrderId = (string) (data_get($object, 'order.merchant_order_id') ?: data_get($object, 'payment_key_claims.billing_data.extra_description') ?: data_get($object, 'extras.order_id') ?: '');
+        $intentionId = $this->firstCallbackValue($object, [
+            'intention.id',
+            'intention_id',
+        ]);
+        $merchantOrderId = $this->firstCallbackValue($object, [
+            'order.merchant_order_id',
+            'order.special_reference',
+            'intention.special_reference',
+            'special_reference',
+            'merchant_order_id',
+            'extras.order_id',
+        ]);
+        $eventAmountCents = $status === 'refunded'
+            ? (int) (data_get($object, 'refunded_amount_cents') ?: data_get($object, 'amount_cents', 0))
+            : (int) data_get($object, 'amount_cents', 0);
+        $paymobOrderId = is_array($object['order'] ?? null)
+            ? (string) data_get($object, 'order.id', '')
+            : (string) ($object['order'] ?? '');
 
         return [
             'success' => true,
             'gateway' => 'paymob',
-            'event_id' => $transactionId === '' ? '' : 'transaction.' . $transactionId,
+            'event_id' => $transactionId === '' ? '' : "transaction.{$transactionId}.{$status}",
             'event_type' => 'TRANSACTION_PROCESSED',
             'order_id' => $merchantOrderId,
             'transaction_id' => $transactionId,
             'gateway_payment_id' => $transactionId,
             'gateway_order_id' => $intentionId,
+            'paymob_order_id' => $paymobOrderId,
             'status' => $status,
-            'amount' => ((float) data_get($object, 'amount_cents', 0)) / 100,
+            'amount' => $eventAmountCents / 100,
             'currency' => strtoupper((string) data_get($object, 'currency', '')),
             'raw' => $object,
             'handled' => true,
         ];
     }
 
+    private function integrationIds(string $channel): array
+    {
+        if (! array_key_exists($channel, config('payment.channels', []))) {
+            throw new RuntimeException("Unsupported Paymob payment channel [{$channel}].");
+        }
+
+        $integrationId = config("payment.gateways.paymob.integration_ids.{$channel}");
+
+        if (blank($integrationId)) {
+            throw new RuntimeException("Paymob integration ID for [{$channel}] is missing.");
+        }
+
+        return [(int) $integrationId];
+    }
+
+    private function verifyHmac(Request $request, array $object): void
+    {
+        $providedHmac = strtolower((string) (
+            $request->header('hmac')
+            ?: $request->query('hmac')
+            ?: $request->input('hmac', '')
+        ));
+        $concatenated = collect(self::HMAC_FIELDS)
+            ->map(fn (string $field) => $this->callbackValue($object, $field))
+            ->implode('');
+        $expectedHmac = hash_hmac(
+            'sha512',
+            $concatenated,
+            (string) config('payment.gateways.paymob.hmac_secret')
+        );
+
+        if ($providedHmac === '' || ! hash_equals($expectedHmac, $providedHmac)) {
+            throw new InvalidWebhookSignatureException('Invalid Paymob webhook signature.');
+        }
+    }
+
+    private function callbackValue(array $object, string $field): string
+    {
+        $value = data_get($object, $field);
+
+        if ($field === 'order.id' && $value === null && ! is_array($object['order'] ?? null)) {
+            $value = $object['order'] ?? null;
+        }
+
+        if ($value === null) {
+            $value = $object[str_replace('.', '_', $field)] ?? $object[$field] ?? null;
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        return (string) ($value ?? '');
+    }
+
+    private function firstCallbackValue(array $object, array $fields): string
+    {
+        foreach ($fields as $field) {
+            $value = $this->callbackValue($object, $field);
+
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
+    }
+
+    private function paymobCallbackUrl(): string
+    {
+        return (string) (config('payment.urls.callback') ?: route('payment.paymob.callback'));
+    }
+
+    private function webhookUrl(): string
+    {
+        return (string) (config('payment.urls.webhook') ?: route('webhook.paymob'));
+    }
+
     private function http(): PendingRequest
     {
-        return Http::baseUrl(rtrim((string) config('services.paymob.base_url'), '/'))
+        return Http::baseUrl(rtrim((string) config('payment.gateways.paymob.base_url'), '/'))
             ->acceptJson()
             ->asJson()
             ->timeout(30)
@@ -205,10 +333,7 @@ class PaymobPaymentService extends AbstractPaymentService implements HandlesPaym
     {
         $parts = preg_split('/\s+/', trim($name), 2) ?: [];
 
-        return [
-            $parts[0] ?? 'Customer',
-            $parts[1] ?? 'Customer',
-        ];
+        return [$parts[0] ?? 'Customer', $parts[1] ?? 'Customer'];
     }
 
     private function boolean(mixed $value): bool

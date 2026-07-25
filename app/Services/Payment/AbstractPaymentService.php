@@ -25,12 +25,12 @@ abstract class AbstractPaymentService implements PaymentInterface
 
     protected function ensureConfigured(array $required, bool $requireEnabled = true): void
     {
-        if ($requireEnabled && ! config("services.{$this->gateway}.enabled", false)) {
+        if ($requireEnabled && ! config("payment.gateways.{$this->gateway}.enabled", false)) {
             throw new RuntimeException(ucfirst($this->gateway).' payments are disabled.');
         }
 
         foreach ($required as $key) {
-            if (blank(config("services.{$this->gateway}.{$key}"))) {
+            if (blank(config("payment.gateways.{$this->gateway}.{$key}"))) {
                 throw new RuntimeException(ucfirst($this->gateway)." configuration [{$key}] is missing.");
             }
         }
@@ -46,7 +46,7 @@ abstract class AbstractPaymentService implements PaymentInterface
                 'user_id' => $order->user_id,
                 'payment_method_id' => $method?->id,
                 'amount' => $order->total,
-                'currency' => strtoupper((string) ($order->currency ?: config("services.{$this->gateway}.currency"))),
+                'currency' => strtoupper((string) ($order->currency ?: config("payment.gateways.{$this->gateway}.currency"))),
                 'status' => 'pending',
                 ...$attributes,
             ]
@@ -72,7 +72,7 @@ abstract class AbstractPaymentService implements PaymentInterface
 
     protected function callbackUrl(string $type): string
     {
-        $configured = config("services.payment_urls.{$type}");
+        $configured = config("payment.urls.{$type}");
 
         if (filled($configured)) {
             return (string) $configured;

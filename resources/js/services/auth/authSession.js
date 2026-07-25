@@ -35,9 +35,8 @@ const PUBLIC_PATH_PREFIXES = [
     "/api/v1/users/google-login",
     "/api/v1/users/google-callback",
     "/api/installer/",
-    "/api/v1/paypal/success",
-    "/api/v1/paypal/cancel",
-    "/api/v1/paypal/webhook",
+    "/api/v1/payment/paymob/callback",
+    "/api/v1/webhooks/paymob",
 ];
 
 let authRedirectInProgress = false;

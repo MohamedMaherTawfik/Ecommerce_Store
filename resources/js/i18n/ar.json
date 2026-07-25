@@ -55,6 +55,24 @@
     "adding": "جاري الإضافة…",
     "added": "تمت الإضافة للسلة."
   },
+  "payment": {
+    "choose_method": "اختر طريقة الدفع",
+    "secured_by_paymob": "دفع آمن عبر صفحة الدفع الموحدة من باي موب.",
+    "unavailable": "غير متاح",
+    "load_error": "تعذر تحميل طرق الدفع.",
+    "card": {
+      "label": "البطاقات",
+      "description": "فيزا وماستركارد وميزة عند تفعيلها"
+    },
+    "apple_pay": {
+      "label": "Apple Pay",
+      "description": "دفع سريع على أجهزة Apple المدعومة"
+    },
+    "mobile_wallet": {
+      "label": "المحافظ الإلكترونية",
+      "description": "فودافون كاش وأورنج كاش وe& cash وWE Pay وغيرها"
+    }
+  },
   "footer": {
     "quick_links": "روابط سريعة",
     "support": "الدعم والتواصل",

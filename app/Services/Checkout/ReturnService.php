@@ -2,17 +2,15 @@
 
 namespace App\Services\Checkout;
 
+use App\Models\Orders;
 use App\Models\Refund;
 use App\Models\ReturnRequest;
-use App\Models\Orders;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ReturnService
 {
-    public function __construct(private readonly InventoryService $inventory)
-    {
-    }
+    public function __construct(private readonly InventoryService $inventory) {}
 
     public function create(int $userId, Orders $order, array $data): ReturnRequest
     {
@@ -20,7 +18,7 @@ class ReturnService
             abort(403);
         }
 
-        if (!in_array($order->status, ['delivered', 'completed'], true) && !config('checkout.allow_non_delivered_returns', false)) {
+        if (! in_array($order->status, ['delivered', 'completed'], true) && ! config('checkout.allow_non_delivered_returns', false)) {
             throw ValidationException::withMessages(['order' => ['Only delivered orders can be returned.']]);
         }
 
@@ -90,16 +88,15 @@ class ReturnService
                 'user_id' => $return->user_id,
                 'amount' => $data['amount'] ?? $return->order->total,
                 'currency' => $return->order->currency ?? config('checkout.currency'),
-                'gateway' => $return->order->payment_method ?? 'manual',
-                'status' => 'refunded',
+                'gateway' => 'paymob',
+                'status' => 'pending',
                 'reason' => $return->reason,
                 'admin_note' => $data['admin_note'] ?? null,
                 'processed_by' => auth()->id(),
-                'processed_at' => now(),
             ]);
 
-            $return->update(['status' => 'refunded']);
-            $return->order->update(['payment_status' => 'refunded', 'refund_status' => 'refunded']);
+            $return->update(['status' => 'processing']);
+            $return->order->update(['refund_status' => 'processing']);
 
             return $refund;
         });

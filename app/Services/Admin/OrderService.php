@@ -17,7 +17,7 @@ class OrderService
     public function paginate(array $filters): LengthAwarePaginator
     {
         return Orders::query()
-            ->with('user')
+            ->with(['user', 'latestPayment'])
             ->withCount('items')
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('payment_status', $status))
             ->when($filters['order_status'] ?? null, fn ($query, $status) => $query->where('status', $status))
@@ -30,7 +30,7 @@ class OrderService
 
     public function find(int $id): Orders
     {
-        return Orders::with(['user', 'items.product', 'statusLogs.changedBy'])
+        return Orders::with(['user', 'items.product', 'statusLogs.changedBy', 'latestPayment'])
             ->withCount('items')
             ->findOrFail($id);
     }

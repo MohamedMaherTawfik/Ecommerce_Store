@@ -10,6 +10,7 @@ use App\Models\User;
 use Database\Seeders\PaymentMethodsSeeder;
 use Database\Seeders\ShippingMethodsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -43,8 +44,25 @@ class CheckoutExpansionTest extends TestCase
             ->assertJsonPath('data.street', 'Market Street');
     }
 
-    public function test_checkout_place_order_creates_cod_order_and_deducts_stock(): void
+    public function test_checkout_place_order_creates_paymob_order_and_deducts_stock(): void
     {
+        config([
+            'checkout.currency' => 'EGP',
+            'payment.gateways.paymob.enabled' => true,
+            'payment.gateways.paymob.base_url' => 'https://accept.paymob.com',
+            'payment.gateways.paymob.secret_key' => 'paymob-secret',
+            'payment.gateways.paymob.public_key' => 'paymob-public',
+            'payment.gateways.paymob.hmac_secret' => 'paymob-hmac',
+            'payment.gateways.paymob.integration_ids.card' => 12345,
+            'payment.gateways.paymob.currency' => 'EGP',
+        ]);
+        Http::fake([
+            'accept.paymob.com/v1/intention/' => Http::response([
+                'id' => 'int_expanded_checkout',
+                'client_secret' => 'cs_expanded_checkout',
+            ]),
+        ]);
+
         $this->seed(PaymentMethodsSeeder::class);
         $this->seed(ShippingMethodsSeeder::class);
 
@@ -77,11 +95,13 @@ class CheckoutExpansionTest extends TestCase
 
         $this->api()->postJson('/api/v1/checkout/place-order', [
             'shipping_address_id' => $addressId,
-            'payment_method' => 'cod',
+            'payment_method' => 'paymob',
+            'payment_channel' => 'card',
         ])
             ->assertOk()
             ->assertJsonPath('data.order.payment_status', 'pending')
-            ->assertJsonPath('data.order.total', 110);
+            ->assertJsonPath('data.order.total', 110)
+            ->assertJsonPath('data.payment.gateway', 'paymob');
 
         $this->assertDatabaseHas('order_items', ['product_id' => $product->id, 'quantity' => 2]);
         $this->assertDatabaseHas('stocks', ['product_id' => $product->id, 'quantity' => 3]);

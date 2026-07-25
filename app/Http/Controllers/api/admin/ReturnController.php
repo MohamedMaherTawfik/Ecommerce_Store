@@ -44,6 +44,6 @@ class ReturnController extends Controller
 
     public function refund(ReturnStatusRequest $request, ReturnService $returns, int $id)
     {
-        return $this->success($returns->refund(ReturnRequest::with('order.latestPayment')->findOrFail($id), $request->validated()), 'Refund recorded.');
+        return $this->success($returns->refund(ReturnRequest::with('order.latestPayment')->findOrFail($id), $request->validated()), 'Refund request recorded. Complete it in Paymob; the signed webhook will confirm it.');
     }
 }

@@ -12,7 +12,7 @@ class LocalPickupShippingProvider extends ManualShippingProvider
             'carrier' => 'Local Pickup',
             'service' => 'Pickup',
             'amount' => 0,
-            'currency' => $data['currency'] ?? config('paypal.currency', 'USD'),
+            'currency' => $data['currency'] ?? config('checkout.currency', 'EGP'),
         ]];
     }
 }

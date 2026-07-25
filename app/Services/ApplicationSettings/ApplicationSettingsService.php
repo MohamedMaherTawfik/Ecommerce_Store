@@ -196,21 +196,18 @@ class ApplicationSettingsService
         Config::set('services.google.redirect', (string) ($payload['GOOGLE_REDIRECT_URI'] ?? ''));
         Config::set('services.google.redirect_url', (string) ($payload['GOOGLE_REDIRECT_URL'] ?? ($payload['GOOGLE_REDIRECT_URI'] ?? '')));
 
-        Config::set('services.stripe.enabled', filter_var($payload['STRIPE_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN));
-        Config::set('services.stripe.public_key', (string) ($payload['STRIPE_PUBLIC_KEY'] ?? ''));
-        Config::set('services.stripe.secret_key', (string) ($payload['STRIPE_SECRET_KEY'] ?? ''));
-        Config::set('services.stripe.webhook_secret', (string) ($payload['STRIPE_WEBHOOK_SECRET'] ?? ''));
-        Config::set('services.stripe.currency', (string) ($payload['STRIPE_CURRENCY'] ?? 'usd'));
-
-        Config::set('paypal.mode', (string) ($payload['PAYPAL_MODE'] ?? 'sandbox'));
-        Config::set('paypal.currency', (string) ($payload['PAYPAL_CURRENCY'] ?? 'USD'));
-        Config::set('paypal.sandbox.client_id', (string) ($payload['PAYPAL_SANDBOX_CLIENT_ID'] ?? ''));
-        Config::set('paypal.sandbox.client_secret', (string) ($payload['PAYPAL_SANDBOX_CLIENT_SECRET'] ?? ''));
-        Config::set('paypal.live.client_id', (string) ($payload['PAYPAL_LIVE_CLIENT_ID'] ?? ''));
-        Config::set('paypal.live.client_secret', (string) ($payload['PAYPAL_LIVE_CLIENT_SECRET'] ?? ''));
-        Config::set('paypal.checkout_webhook_id', (string) ($payload['PAYPAL_CHECKOUT_WEBHOOK_ID'] ?? ''));
-        Config::set('paypal.wallet_webhook_id', (string) ($payload['PAYPAL_WALLET_WEBHOOK_ID'] ?? ''));
-        Config::set('paypal.webhook_id', (string) ($payload['PAYPAL_CHECKOUT_WEBHOOK_ID'] ?? ''));
+        Config::set('payment.gateways.paymob.enabled', filter_var($payload['PAYMOB_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN));
+        Config::set('payment.gateways.paymob.base_url', (string) ($payload['PAYMOB_BASE_URL'] ?? 'https://accept.paymob.com'));
+        Config::set('payment.gateways.paymob.public_key', (string) ($payload['PAYMOB_PUBLIC_KEY'] ?? ''));
+        Config::set('payment.gateways.paymob.secret_key', (string) ($payload['PAYMOB_SECRET_KEY'] ?? ''));
+        Config::set('payment.gateways.paymob.hmac_secret', (string) ($payload['PAYMOB_HMAC_SECRET'] ?? ''));
+        Config::set('payment.gateways.paymob.currency', (string) ($payload['PAYMOB_CURRENCY'] ?? 'EGP'));
+        Config::set('payment.gateways.paymob.iframe_id', (string) ($payload['PAYMOB_IFRAME_ID'] ?? ''));
+        Config::set('payment.gateways.paymob.integration_ids.card', (string) ($payload['PAYMOB_INTEGRATION_ID_CARD'] ?? ''));
+        Config::set('payment.gateways.paymob.integration_ids.mobile_wallet', (string) ($payload['PAYMOB_INTEGRATION_ID_WALLET'] ?? ''));
+        Config::set('payment.gateways.paymob.integration_ids.apple_pay', (string) ($payload['PAYMOB_INTEGRATION_ID_APPLE_PAY'] ?? ''));
+        Config::set('payment.urls.callback', (string) ($payload['PAYMOB_CALLBACK_URL'] ?? ''));
+        Config::set('payment.urls.webhook', (string) ($payload['PAYMOB_WEBHOOK_URL'] ?? ''));
 
         Config::set('mail.default', (string) ($payload['MAIL_MAILER'] ?? 'log'));
         Config::set('mail.mailers.smtp.scheme', $this->nullableValue($payload['MAIL_SCHEME'] ?? null));

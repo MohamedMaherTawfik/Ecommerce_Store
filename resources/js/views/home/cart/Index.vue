@@ -57,14 +57,34 @@
                     <input v-model.trim="checkoutForm.phone" class="store-input form-control" placeholder="Phone" required maxlength="50" />
                     <input v-model.trim="checkoutForm.city" class="store-input form-control" placeholder="City" maxlength="100" />
                     <textarea v-model.trim="checkoutForm.address" class="store-textarea form-control" rows="3" placeholder="Address" required maxlength="500"></textarea>
-                    <select v-model="checkoutForm.payment_method" class="store-select form-select">
-                        <option value="paypal">PayPal</option>
-                        <option value="cash_on_delivery">Cash on Delivery</option>
-                        <option value="stripe">Stripe</option>
-                        <option value="paymob">Paymob</option>
-                        <option value="myfatoorah">MyFatoorah</option>
-                    </select>
-                    <button class="store-btn store-btn--primary" :disabled="busy || !cart.items?.length">
+                    <fieldset class="payment-methods">
+                        <legend>{{ t('payment.choose_method') }}</legend>
+                        <label
+                            v-for="method in visiblePaymentMethods"
+                            :key="method.code"
+                            class="payment-method"
+                            :class="{ 'payment-method--selected': checkoutForm.payment_channel === method.code, 'payment-method--disabled': !method.available }"
+                        >
+                            <input
+                                v-model="checkoutForm.payment_channel"
+                                type="radio"
+                                name="payment_channel"
+                                :value="method.code"
+                                :disabled="!method.available"
+                            />
+                            <i :class="method.icon" aria-hidden="true"></i>
+                            <span>
+                                <strong>{{ t(`payment.${method.code}.label`) }}</strong>
+                                <small>{{ t(`payment.${method.code}.description`) }}</small>
+                            </span>
+                            <span v-if="!method.available" class="payment-method__status">{{ t('payment.unavailable') }}</span>
+                        </label>
+                        <p class="payment-methods__note">
+                            <i class="bi bi-shield-lock"></i>
+                            {{ t('payment.secured_by_paymob') }}
+                        </p>
+                    </fieldset>
+                    <button class="store-btn store-btn--primary" :disabled="busy || !cart.items?.length || !selectedPaymentAvailable">
                         {{ busy ? 'Processing...' : 'Checkout' }}
                     </button>
                 </form>
@@ -76,6 +96,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useSeoMeta } from '@/composables/useSeoMeta';
 
 useSeoMeta({
@@ -90,19 +111,34 @@ import OrderService from '@/services/home/OrderService';
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const lang = computed(() => route.params.lang || localStorage.getItem('language') || 'en');
 
 const loading = ref(false);
 const busy = ref(false);
 const couponCode = ref('');
 const cart = ref({ items: [], subtotal: 0, discount: 0, total: 0, coupon: null });
+const paymentMethods = ref([
+    { code: 'card', icon: 'bi bi-credit-card-2-front', available: false },
+    { code: 'mobile_wallet', icon: 'bi bi-phone', available: false },
+]);
 
 const checkoutForm = reactive({
-    payment_method: 'paypal',
+    payment_method: 'paymob',
+    payment_channel: 'card',
     phone: '',
     city: '',
     address: '',
 });
+
+const visiblePaymentMethods = computed(() => paymentMethods.value.filter((method) => {
+    if (method.code !== 'apple_pay') return true;
+    return method.available && typeof window.ApplePaySession !== 'undefined';
+}));
+
+const selectedPaymentAvailable = computed(() => visiblePaymentMethods.value.some(
+    (method) => method.code === checkoutForm.payment_channel && method.available,
+));
 
 const fetchCart = async () => {
     loading.value = true;
@@ -113,6 +149,19 @@ const fetchCart = async () => {
         toastr.error(err.response?.data?.message || 'Unable to load cart.');
     } finally {
         loading.value = false;
+    }
+};
+
+const fetchPaymentMethods = async () => {
+    try {
+        const response = await OrderService.paymentMethods();
+        paymentMethods.value = response.channels || paymentMethods.value;
+
+        if (!selectedPaymentAvailable.value) {
+            checkoutForm.payment_channel = visiblePaymentMethods.value.find((method) => method.available)?.code || 'card';
+        }
+    } catch {
+        toastr.error(t('payment.load_error'));
     }
 };
 
@@ -190,10 +239,10 @@ const checkout = async () => {
     }
 };
 
-const money = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0));
+const money = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EGP' }).format(Number(value || 0));
 const imageUrl = (path) => !path ? '/images/categorey.webp' : path.startsWith('http') ? path : `/storage/${path}`;
 
-onMounted(fetchCart);
+onMounted(() => Promise.all([fetchCart(), fetchPaymentMethods()]));
 </script>
 
 <style scoped>
@@ -294,6 +343,73 @@ onMounted(fetchCart);
 .checkout-form {
     display: grid;
     gap: 0.65rem;
+}
+
+.payment-methods {
+    display: grid;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.payment-methods legend {
+    margin-bottom: 0.15rem;
+    color: var(--sf-text);
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+.payment-method {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    gap: 0.7rem;
+    align-items: center;
+    padding: 0.8rem;
+    border: 1px solid var(--sf-border);
+    border-radius: 0.8rem;
+    cursor: pointer;
+    transition: border-color 160ms ease, background 160ms ease;
+}
+
+.payment-method--selected {
+    border-color: var(--sf-primary);
+    background: color-mix(in srgb, var(--sf-primary) 7%, var(--sf-surface));
+}
+
+.payment-method--disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+}
+
+.payment-method > i {
+    color: var(--sf-primary);
+    font-size: 1.25rem;
+}
+
+.payment-method span:not(.payment-method__status) {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.payment-method small,
+.payment-methods__note {
+    color: var(--sf-muted);
+    font-size: 0.75rem;
+}
+
+.payment-method__status {
+    color: var(--sf-danger);
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.payment-methods__note {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    margin: 0;
 }
 
 .coupon-form {
