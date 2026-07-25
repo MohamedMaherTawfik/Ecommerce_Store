@@ -48,6 +48,7 @@ use App\Http\Controllers\api\home\HomePalleteController;
 use App\Http\Controllers\api\home\InvoiceController;
 use App\Http\Controllers\api\home\InvoiceController as HomeInvoiceController;
 use App\Http\Controllers\api\home\LayoutController;
+use App\Http\Controllers\api\home\OrderController;
 use App\Http\Controllers\api\home\PaymentMethodController;
 use App\Http\Controllers\api\home\ProductController as HomeProductController;
 use App\Http\Controllers\api\home\ReturnController as HomeReturnController;

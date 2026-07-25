@@ -120,9 +120,11 @@ import { useHomeStore } from "@/stores/useHomeStore";
 import { useProductsStore } from "@/stores/useProductsStore";
 import { useCategoriesStore } from "@/stores/useCategoriesStore";
 import { useSettingsStore } from "@/stores/useSettingsStore";
-import { useCartStore } from "@/stores/useCartStore";
 import { useWishlistStore } from "@/stores/useWishlistStore";
+import { syncCartState } from "@/composables/useCartState";
 import HomeService from "@/services/home/HomeService";
+import CartService from "@/services/home/CartService";
+import WishlistService from "@/services/home/WishlistService";
 import Button from "@/components/ui/Button.vue";
 import Badge from "@/components/ui/Badge.vue";
 import Rating from "@/components/ui/Rating.vue";
@@ -153,7 +155,6 @@ const homeStore = useHomeStore();
 const productsStore = useProductsStore();
 const categoriesStore = useCategoriesStore();
 const settingsStore = useSettingsStore();
-const cartStore = useCartStore();
 const wishlistStore = useWishlistStore();
 const latestProducts = ref([]);
 const apiCategories = ref([]);
@@ -256,17 +257,35 @@ const reloadHome = () => {
 const handleAddToCart = async (product) => {
     if (!product) return;
     cartAddingId.value = product.id;
-    cartStore.addItem(product);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    cartAddingId.value = null;
-    toastr.success(`${product.name} added to cart.`);
+    try {
+        const response = await CartService.add(product.id, { quantity: 1 });
+        syncCartState(response);
+        toastr.success(response?.message || `${product.name} added to cart.`);
+    } catch (error) {
+        toastr.error(error.response?.data?.message || "Unable to add item to cart.");
+    } finally {
+        cartAddingId.value = null;
+    }
 };
 
-const handleToggleWishlist = (product) => {
+const handleToggleWishlist = async (product) => {
     if (!product) return;
-    const wasWishlisted = wishlistStore.isWishlisted(product.id);
-    wishlistStore.toggleWishlist(product);
-    toastr.success(wasWishlisted ? "Removed from wishlist." : "Saved to wishlist.");
+    try {
+        const response = await WishlistService.toggle(product.id);
+        const isWishlisted = Boolean(response.data?.wishlisted);
+
+        if (isWishlisted && !wishlistStore.isWishlisted(product.id)) {
+            wishlistStore.toggleWishlist(product);
+        }
+
+        if (!isWishlisted && wishlistStore.isWishlisted(product.id)) {
+            wishlistStore.toggleWishlist(product);
+        }
+
+        toastr.success(isWishlisted ? "Saved to wishlist." : "Removed from wishlist.");
+    } catch (error) {
+        toastr.error(error.response?.data?.message || "Unable to update wishlist.");
+    }
 };
 
 const openQuickView = (product) => {
