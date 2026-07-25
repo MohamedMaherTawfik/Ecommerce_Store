@@ -42,6 +42,7 @@ use App\Http\Controllers\api\home\BrandController as HomeBrandController;
 use App\Http\Controllers\api\home\CartController;
 use App\Http\Controllers\api\home\CategoryController as HomeCategoryController;
 use App\Http\Controllers\api\home\CheckoutController;
+use App\Http\Controllers\api\home\ContactUsController as HomeContactUsController;
 use App\Http\Controllers\api\home\HomeContentController;
 use App\Http\Controllers\api\home\HomePalleteController;
 use App\Http\Controllers\api\home\InvoiceController;
@@ -127,6 +128,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/home-content', [HomeContentController::class, 'index']);
         Route::get('/layout', [LayoutController::class, 'index']);
         Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+        Route::post('/contact-us', [HomeContactUsController::class, 'store'])
+            ->middleware('throttle:5,1');
         Route::get('/blog', [HomeBlogController::class, 'index']);
         Route::get('/blog/categories', [HomeBlogController::class, 'categories']);
         Route::get('/blog/tags', [HomeBlogController::class, 'tags']);
@@ -153,6 +156,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/select-shipping', [CheckoutController::class, 'selectShipping']);
             Route::post('/place-order', [CheckoutController::class, 'placeOrder']);
         });
+        Route::get('/orders', [OrderController::class, 'index']);
+        Route::get('/orders/{id}', [OrderController::class, 'show'])->whereNumber('id');
         Route::get('/orders/{order}/invoice/download', [HomeInvoiceController::class, 'download'])->whereNumber('order');
         Route::prefix('returns')->group(function () {
             Route::get('/', [HomeReturnController::class, 'index']);

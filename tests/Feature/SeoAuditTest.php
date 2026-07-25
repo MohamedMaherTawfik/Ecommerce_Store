@@ -17,7 +17,7 @@ class SeoAuditTest extends TestCase
         $product = Products::factory()->create([
             'name' => 'Standing Desk',
             'slug' => 'standing-desk',
-            'categories_id' => $category->id,
+            'category_id' => $category->id,
             'is_active' => true,
             'meta_title' => 'Ergonomic Standing Desk',
             'meta_description' => 'A height-adjustable standing desk for productive workspaces.',
@@ -53,7 +53,7 @@ class SeoAuditTest extends TestCase
         $product = Products::factory()->create([
             'name' => 'Studio Headphones',
             'slug' => 'studio-headphones',
-            'categories_id' => $category->id,
+            'category_id' => $category->id,
             'is_active' => true,
         ]);
 

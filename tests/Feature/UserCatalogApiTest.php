@@ -33,8 +33,8 @@ class UserCatalogApiTest extends TestCase
         $brand = brands::factory()->create();
 
         $low = Products::factory()->create([
-            'categories_id' => $category->id,
-            'brands_id' => $brand->id,
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
             'name' => 'Cotton Tee',
             'price' => 25,
             'is_active' => true,

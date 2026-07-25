@@ -86,6 +86,10 @@ const BlogShow = () => import("../views/home/blog/Show.vue");
 const SupportIndex = () => import("../views/home/support/Index.vue");
 const SupportShow = () => import("../views/home/support/Show.vue");
 const AdminPermissions = () => import("../views/admin/permissions/Index.vue");
+const AdminShipping = () => import("../views/admin/shipping/Index.vue");
+const AdminTaxRules = () => import("../views/admin/tax_rules/Index.vue");
+const AdminInventory = () => import("../views/admin/inventory/Index.vue");
+const AdminReturns = () => import("../views/admin/returns/Index.vue");
 
 const ContactMessageIndex = () =>
     import("../views/admin/contact_messages/Index.vue");
@@ -513,6 +517,26 @@ const routes = [
     {
         path: "/admin/permissions",
         component: AdminPermissions,
+        meta: { hideNavbar: true, hideFooter: true, requiresAdmin: true },
+    },
+    {
+        path: "/admin/shipping",
+        component: AdminShipping,
+        meta: { hideNavbar: true, hideFooter: true, requiresAdmin: true },
+    },
+    {
+        path: "/admin/tax-rules",
+        component: AdminTaxRules,
+        meta: { hideNavbar: true, hideFooter: true, requiresAdmin: true },
+    },
+    {
+        path: "/admin/inventory",
+        component: AdminInventory,
+        meta: { hideNavbar: true, hideFooter: true, requiresAdmin: true },
+    },
+    {
+        path: "/admin/returns",
+        component: AdminReturns,
         meta: { hideNavbar: true, hideFooter: true, requiresAdmin: true },
     },
 

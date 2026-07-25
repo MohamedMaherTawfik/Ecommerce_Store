@@ -151,6 +151,18 @@ const menuItems = [
         icon: "bi-credit-card",
         children: [
             { label: "All Orders", to: "/admin/payments/orders", permission: "orders.view" },
+            { label: "Returns", to: "/admin/returns", permission: "returns.manage" },
+        ],
+    },
+    {
+        key: "operations",
+        type: "group",
+        label: "Operations",
+        icon: "bi-sliders2",
+        children: [
+            { label: "Shipping", to: "/admin/shipping", permission: "shipping.manage" },
+            { label: "Tax Rules", to: "/admin/tax-rules", permission: "shipping.manage" },
+            { label: "Inventory", to: "/admin/inventory", permission: "inventory.manage" },
         ],
     },
     {

@@ -130,6 +130,57 @@
                             Updates are saved immediately and reflected in the order timeline.
                         </p>
                     </article>
+
+                    <article v-if="canManageOrders" class="payment-card admin-grid__item--12">
+                        <div class="payment-card__header">
+                            <h3>Fulfillment actions</h3>
+                            <a
+                                class="btn-admin btn-admin--soft"
+                                :href="OrderService.invoiceUrl(order.id)"
+                                target="_blank"
+                                rel="noopener"
+                            >
+                                <i class="bi bi-file-earmark-arrow-down"></i>
+                                Invoice
+                            </a>
+                        </div>
+                        <div class="fulfillment-grid">
+                            <label class="admin-label">
+                                Order status
+                                <select v-model="orderStatus" class="form-select admin-control">
+                                    <option v-for="status in orderStatuses" :key="status" :value="status">{{ status }}</option>
+                                </select>
+                            </label>
+                            <label class="admin-label">
+                                Order shipping status
+                                <select v-model="orderShippingStatus" class="form-select admin-control">
+                                    <option v-for="status in orderShippingStatuses" :key="status" :value="status">{{ status }}</option>
+                                </select>
+                            </label>
+                            <label class="admin-label">
+                                Shipment status
+                                <select v-model="shipmentStatus" class="form-select admin-control">
+                                    <option v-for="status in shipmentStatuses" :key="status" :value="status">{{ status }}</option>
+                                </select>
+                            </label>
+                            <label class="admin-label">
+                                Tracking number
+                                <input v-model.trim="trackingNumber" class="form-control admin-control" />
+                            </label>
+                            <label class="admin-label">
+                                Tracking URL
+                                <input v-model.trim="trackingUrl" class="form-control admin-control" type="url" />
+                            </label>
+                        </div>
+                        <div class="fulfillment-actions">
+                            <button class="btn-admin btn-admin--primary" :disabled="updating" @click="updateOrderState">Save statuses</button>
+                            <button class="btn-admin btn-admin--soft" :disabled="updating" @click="createShipment">Create shipment</button>
+                            <button class="btn-admin btn-admin--soft" :disabled="updating" @click="updateShipment">Save shipment</button>
+                            <button class="btn-admin btn-admin--soft" :disabled="updating" @click="trackShipment">Track</button>
+                            <button class="btn-admin btn-admin--soft" :disabled="updating" @click="buyLabel">Buy label</button>
+                            <RouterLink to="/admin/returns" class="btn-admin btn-admin--soft">Returns and refunds</RouterLink>
+                        </div>
+                    </article>
                 </section>
 
                 <section class="admin-panel">
@@ -194,6 +245,14 @@ const order = ref(null);
 const loading = ref(false);
 const updating = ref(false);
 const selectedStatus = ref("pending");
+const orderStatus = ref("pending");
+const orderShippingStatus = ref("pending");
+const shipmentStatus = ref("pending");
+const trackingNumber = ref("");
+const trackingUrl = ref("");
+const orderStatuses = ["pending", "confirmed", "processing", "completed", "cancelled"];
+const orderShippingStatuses = ["pending", "packed", "shipped", "in_transit", "delivered", "returned", "cancelled"];
+const shipmentStatuses = ["pending", "processing", "label_created", "shipped", "in_transit", "delivered", "failed", "returned", "cancelled"];
 
 const fetchOrder = async () => {
     loading.value = true;
@@ -202,10 +261,85 @@ const fetchOrder = async () => {
         const payload = await OrderService.getOrder(route.params.id);
         order.value = payload.data;
         selectedStatus.value = order.value?.payment_status || "pending";
+        orderStatus.value = order.value?.order_status || order.value?.status || "pending";
+        orderShippingStatus.value = order.value?.shipping_status || "pending";
+        shipmentStatus.value = order.value?.shipping?.shipment_status || order.value?.shipping_status || "pending";
+        trackingNumber.value = order.value?.shipping?.tracking_number || "";
+        trackingUrl.value = order.value?.shipping?.tracking_url || "";
     } catch (error) {
         toastr.error("Unable to load order details.");
     } finally {
         loading.value = false;
+    }
+};
+
+const updateOrderState = async () => {
+    if (!order.value) return;
+    updating.value = true;
+    try {
+        await Promise.all([
+            OrderService.updateOrderStatus(order.value.id, { order_status: orderStatus.value }),
+            OrderService.updateShippingStatus(order.value.id, { shipping_status: orderShippingStatus.value }),
+        ]);
+        toastr.success("Order statuses updated.");
+        await fetchOrder();
+    } catch {
+        toastr.error("Unable to update order statuses.");
+    } finally {
+        updating.value = false;
+    }
+};
+
+const createShipment = async () => {
+    if (!order.value) return;
+    updating.value = true;
+    try {
+        await OrderService.createShipment(order.value.id, { provider: order.value.shipping?.provider || "manual" });
+        toastr.success("Shipment created.");
+        await fetchOrder();
+    } catch {
+        toastr.error("Unable to create shipment.");
+    } finally {
+        updating.value = false;
+    }
+};
+
+const updateShipment = async () => {
+    if (!order.value) return;
+    updating.value = true;
+    try {
+        await OrderService.updateShipmentStatus(order.value.id, {
+            shipment_status: shipmentStatus.value,
+            tracking_number: trackingNumber.value || null,
+            tracking_url: trackingUrl.value || null,
+        });
+        toastr.success("Shipment updated.");
+        await fetchOrder();
+    } catch {
+        toastr.error("Unable to update shipment.");
+    } finally {
+        updating.value = false;
+    }
+};
+
+const trackShipment = async () => {
+    if (!order.value) return;
+    try {
+        await OrderService.trackShipment(order.value.id);
+        toastr.success("Tracking request completed.");
+    } catch {
+        toastr.error("Tracking is unavailable for this shipment.");
+    }
+};
+
+const buyLabel = async () => {
+    if (!order.value) return;
+    try {
+        await OrderService.buyLabel(order.value.id);
+        toastr.success("Shipment label created.");
+        await fetchOrder();
+    } catch {
+        toastr.error("Label purchase is unavailable. Configure EasyPost or use manual shipment.");
     }
 };
 
@@ -334,6 +468,19 @@ onMounted(fetchOrder);
     margin-bottom: 0;
 }
 
+.fulfillment-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.fulfillment-actions {
+    display: flex;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
 .payment-items-table {
     min-width: 720px;
 }
@@ -367,12 +514,20 @@ onMounted(fetchOrder);
     .payment-card {
         grid-column: span 12;
     }
+
+    .fulfillment-grid {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 @media (max-width: 575.98px) {
     .payment-facts div {
         grid-template-columns: 1fr;
         gap: 0.25rem;
+    }
+
+    .fulfillment-grid {
+        grid-template-columns: 1fr;
     }
 }
 </style>

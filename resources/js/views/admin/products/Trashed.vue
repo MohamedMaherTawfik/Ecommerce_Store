@@ -72,8 +72,8 @@
                                             <div class="admin-table__secondary">{{ product.sku || "No SKU" }}</div>
                                         </td>
                                         <td>{{ product.price ?? "-" }}</td>
-                                        <td>{{ product.category?.name || product.categories_id || "-" }}</td>
-                                        <td>{{ product.brand?.name || product.brands_id || "-" }}</td>
+                                        <td>{{ product.category?.name || product.category_id || "-" }}</td>
+                                        <td>{{ product.brand?.name || product.brand_id || "-" }}</td>
                                         <td>{{ product.stocks?.quantity || "0" }}</td>
                                         <td class="text-end">
                                             <div class="admin-actions">

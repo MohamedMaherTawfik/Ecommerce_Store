@@ -30,7 +30,7 @@ class OrderService
 
     public function find(int $id): Orders
     {
-        return Orders::with(['user', 'items.product', 'statusLogs.changedBy', 'latestPayment'])
+        return Orders::with(['user', 'items.product', 'statusLogs.changedBy', 'latestPayment', 'shipment', 'invoice'])
             ->withCount('items')
             ->findOrFail($id);
     }

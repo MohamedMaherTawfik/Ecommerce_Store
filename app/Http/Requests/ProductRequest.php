@@ -29,7 +29,7 @@ class ProductRequest extends FormRequest
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('products', 'slug')->ignore($productId)],
             'description' => 'nullable|string',
             'price' => 'required|numeric',
-            'categorey_id' => 'nullable|exists:categories,id',
+            'category_id' => 'nullable|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'is_active' => 'nullable|boolean',
             'is_featured' => 'nullable|boolean',

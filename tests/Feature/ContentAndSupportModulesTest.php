@@ -15,6 +15,29 @@ class ContentAndSupportModulesTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_public_contact_form_stores_guest_and_authenticated_messages(): void
+    {
+        $this->postJson('/api/v1/contact-us', [
+            'name' => 'Guest Buyer',
+            'email' => 'guest@example.com',
+            'subject' => 'Product question',
+            'message' => 'Can you confirm availability?',
+        ])->assertOk()->assertJsonPath('data.email', 'guest@example.com');
+
+        $customer = User::factory()->create(['name' => 'Known Buyer', 'email' => 'known@example.com']);
+        Sanctum::actingAs($customer);
+
+        $this->postJson('/api/v1/contact-us', [
+            'name' => 'Ignored Name',
+            'email' => 'ignored@example.com',
+            'subject' => 'Order question',
+            'message' => 'Can you check my shipment?',
+        ])->assertOk()->assertJsonPath('data.email', 'known@example.com');
+
+        $this->assertDatabaseHas('contact_us', ['email' => 'guest@example.com', 'user_id' => null]);
+        $this->assertDatabaseHas('contact_us', ['email' => 'known@example.com', 'user_id' => $customer->id]);
+    }
+
     public function test_customer_and_admin_can_complete_ticket_workflow_with_ownership_enforced(): void
     {
         $customer = User::factory()->create(['role' => 'user']);
@@ -79,7 +102,7 @@ class ContentAndSupportModulesTest extends TestCase
 
         $this->api()->postJson("/api/admin/email-templates/{$template->id}/preview", [
             'variables' => ['user_name' => 'Buyer', 'user_email' => 'buyer@example.com'],
-        ])->assertOk()->assertJsonPath('data.subject', 'Welcome to Laravel');
+        ])->assertOk()->assertJsonPath('data.subject', 'Welcome to '.config('app.name'));
 
         $this->api()->postJson("/api/admin/email-templates/{$template->id}/test-send", [
             'email' => 'qa@example.com',

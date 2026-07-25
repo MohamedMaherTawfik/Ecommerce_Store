@@ -16,14 +16,14 @@ class ReturnController extends Controller
     public function index()
     {
         return $this->success(ReturnRequestResource::collection(
-            ReturnRequest::with(['user', 'order', 'items.orderItem.product'])->latest()->paginate(20)
+            ReturnRequest::with(['user', 'order.user', 'items.orderItem.product'])->latest()->paginate(20)
         ), 'Returns loaded.');
     }
 
     public function show(int $id)
     {
         return $this->success(new ReturnRequestResource(
-            ReturnRequest::with(['user', 'order', 'items.orderItem.product'])->findOrFail($id)
+            ReturnRequest::with(['user', 'order.user', 'items.orderItem.product'])->findOrFail($id)
         ), 'Return loaded.');
     }
 

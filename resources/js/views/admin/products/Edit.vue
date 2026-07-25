@@ -67,11 +67,11 @@
 
                             <!-- Category -->
                             <div class="admin-field">
-                                <label for="categories_id" class="admin-label">
+                                <label for="category_id" class="admin-label">
                                     <i class="bi bi-diagram-3"></i>
                                     <span>Category</span>
                                 </label>
-                                <select id="categories_id" v-model="form.categories_id"
+                                <select id="category_id" v-model="form.category_id"
                                     class="form-select admin-control">
                                     <option value="">Select category</option>
                                     <option v-for="category in categories" :key="category.id" :value="category.id">
@@ -82,11 +82,11 @@
 
                             <!-- Brand -->
                             <div class="admin-field">
-                                <label for="brands_id" class="admin-label">
+                                <label for="brand_id" class="admin-label">
                                     <i class="bi bi-award"></i>
                                     <span>Brand</span>
                                 </label>
-                                <select id="brands_id" v-model="form.brands_id" class="form-select admin-control">
+                                <select id="brand_id" v-model="form.brand_id" class="form-select admin-control">
                                     <option value="">Select brand</option>
                                     <option v-for="brand in brands" :key="brand.id" :value="brand.id">
                                         {{ brand.name }}
@@ -318,8 +318,8 @@ const form = reactive({
     name: "",
     description: "",
     price: "",
-    categories_id: "",
-    brands_id: "",
+    category_id: "",
+    brand_id: "",
     images: [],
     currentImages: [],
     is_active: true,
@@ -415,8 +415,8 @@ const fetchProduct = async () => {
         form.name = product.name ?? "";
         form.description = product.description ?? "";
         form.price = product.price ?? "";
-        form.categories_id = product.categories_id ?? "";
-        form.brands_id = product.brands_id ?? "";
+        form.category_id = product.category_id ?? "";
+        form.brand_id = product.brand_id ?? "";
         form.currentImage = product.image ?? "";
         form.is_active = Boolean(product.is_active);
         form.is_featured = Boolean(product.is_featured);
@@ -466,8 +466,8 @@ const buildPayload = () => {
     appendIfPresent(payload, "name", form.name);
     appendIfPresent(payload, "description", form.description);
     appendIfPresent(payload, "price", form.price);
-    appendIfPresent(payload, "categories_id", form.categories_id);
-    appendIfPresent(payload, "brands_id", form.brands_id);
+    appendIfPresent(payload, "category_id", form.category_id);
+    appendIfPresent(payload, "brand_id", form.brand_id);
     appendIfPresent(payload, "return_policy", form.return_policy);
     appendIfPresent(payload, "meta_title", form.meta_title);
     appendIfPresent(payload, "meta_description", form.meta_description);

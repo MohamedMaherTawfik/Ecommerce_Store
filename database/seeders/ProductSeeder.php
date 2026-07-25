@@ -182,7 +182,7 @@ class ProductSeeder extends Seeder
                 ],
 
                 [
-                    'categorey_id' => $category?->id,
+                    'category_id' => $category?->id,
                     'brand_id' => $brand?->id,
                     'name' => $item['name'],
                     'slug' => Str::slug($item['name']),

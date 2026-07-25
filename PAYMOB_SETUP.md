@@ -76,13 +76,14 @@ Apple Pay is shown only when its integration ID is configured and the browser ex
 ## Unified Checkout flow
 
 1. The customer selects Cards, Apple Pay, or Mobile Wallets.
-2. Laravel creates the order using `payment_method=paymob`.
-3. `PaymentGatewayManager` resolves `PaymobPaymentService`.
-4. The service creates a Paymob payment intention with the selected channel's integration ID.
-5. The pending payment and intention ID are stored in the existing `payments` table.
-6. The browser is redirected to Paymob Unified Checkout.
-7. Paymob sends a signed callback.
-8. `PaymentWebhookController` logs, verifies, deduplicates, and applies the state through `PaymentStatusService`.
+2. Laravel creates the order through the shared checkout service using `payment_method=paymob`.
+3. Checkout persists the address snapshot, order items, tax, shipping, invoice, shipment, stock movement, and pending payment.
+4. `PaymentGatewayManager` resolves `PaymobPaymentService`.
+5. The service creates a Paymob payment intention with the selected channel's integration ID.
+6. The pending payment and intention ID are stored in the existing `payments` table.
+7. The browser is redirected to Paymob Unified Checkout.
+8. Paymob sends a signed callback.
+9. `PaymentWebhookController` logs, verifies, deduplicates, and applies the state through `PaymentStatusService`.
 
 ## Callback and webhook security
 
@@ -119,6 +120,8 @@ Run the payment tests:
 ```bash
 php artisan test --compact tests/Feature/PaymentGatewayIntegrationTest.php
 php artisan test --compact tests/Feature/PaymentStatusServiceTest.php
+php artisan test
+npm run build
 ```
 
 The automated coverage verifies:
@@ -159,7 +162,8 @@ php artisan view:cache
 ```
 
 6. Start the configured Laravel queue worker for payment emails and notifications.
-7. Perform a low-value live transaction for every enabled channel before opening checkout to customers.
+7. Confirm production mail delivery, public uploaded-media storage, and database backups.
+8. Perform a low-value live transaction for every enabled channel before opening checkout to customers.
 
 ## References
 

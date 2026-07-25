@@ -47,7 +47,7 @@ class HomePageService
                     'slug',
                     'price',
                     'image',
-                    'categorey_id',
+                    'category_id',
                     'brand_id',
                     'description'
                 )
@@ -65,7 +65,7 @@ class HomePageService
                     'slug',
                     'price',
                     'image',
-                    'categorey_id',
+                    'category_id',
                     'brand_id'
                 )
                     ->with(['category:id,name', 'brand:id,name', 'stocks:id,product_id,quantity'])

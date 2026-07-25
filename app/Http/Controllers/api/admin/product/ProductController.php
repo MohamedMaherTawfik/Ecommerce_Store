@@ -100,7 +100,6 @@ class ProductController extends Controller
 
             unset($data['sizes'], $data['colors'], $data['images'], $data['quantity']);
 
-            // main image
             if ($request->hasFile('image')) {
                 $data['image'] = $imageStorage->store($request->file('image'), 'products', 1600, 1600);
             }
@@ -141,16 +140,20 @@ class ProductController extends Controller
                 );
             }
 
-            // gallery
+            $galleryImages = [];
             if ($request->hasFile('images')) {
-                ProductImages::insert(
-                    collect($request->file('images'))->map(fn($img) => [
+                $galleryImages = collect($request->file('images'))->map(fn($img) => [
                         'product_id' => $product->id,
                         'image' => $imageStorage->store($img, 'products', 1600, 1600),
                         'created_at' => now(),
                         'updated_at' => now()
-                    ])->toArray()
-                );
+                    ])->toArray();
+
+                ProductImages::insert($galleryImages);
+            }
+
+            if (empty($product->image) && ! empty($galleryImages)) {
+                $product->update(['image' => $galleryImages[0]['image']]);
             }
 
             \App\Support\TaggedCache::tags(['products'])->flush();
@@ -238,7 +241,7 @@ class ProductController extends Controller
                 );
             }
 
-            // gallery
+            $galleryImages = [];
             if ($request->hasFile('images')) {
 
                 $oldImages = ProductImages::where('product_id', $product->id)->get();
@@ -251,14 +254,18 @@ class ProductController extends Controller
 
                 ProductImages::where('product_id', $product->id)->delete();
 
-                ProductImages::insert(
-                    collect($request->file('images'))->map(fn($img) => [
+                $galleryImages = collect($request->file('images'))->map(fn($img) => [
                         'product_id' => $product->id,
                         'image' => $imageStorage->store($img, 'products', 1600, 1600),
                         'created_at' => now(),
                         'updated_at' => now()
-                    ])->toArray()
-                );
+                    ])->toArray();
+
+                ProductImages::insert($galleryImages);
+            }
+
+            if (empty($product->fresh()->image) && ! empty($galleryImages)) {
+                $product->update(['image' => $galleryImages[0]['image']]);
             }
 
             \App\Support\TaggedCache::tags(['products'])->flush();

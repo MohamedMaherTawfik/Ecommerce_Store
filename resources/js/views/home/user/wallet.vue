@@ -51,11 +51,6 @@
                 </div>
             </article>
 
-            <div class="wallet-actions">
-                <button class="store-btn store-btn--primary" :disabled="isCharging" @click="chargeWallet">
-                    {{ isCharging ? 'Charging...' : 'Charge wallet' }}
-                </button>
-            </div>
         </section>
 
         <section v-else class="wallet-error store-card">
@@ -80,7 +75,6 @@ useSeoMeta({
 const walletData = ref(null);
 const loading = ref(true);
 const error = ref('');
-const isCharging = ref(false);
 
 const fetchWallet = async () => {
     loading.value = true;
@@ -114,14 +108,6 @@ const getImageUrl = (imagePath) => {
         return imagePath;
     }
     return `/storage/${imagePath}`;
-};
-
-const chargeWallet = () => {
-    isCharging.value = true;
-    setTimeout(() => {
-        isCharging.value = false;
-        alert('This feature is coming soon.');
-    }, 1000);
 };
 
 const formatBalance = (balance) => new Intl.NumberFormat('en-US').format(Number(balance || 0));
@@ -308,10 +294,6 @@ onMounted(fetchWallet);
 .meta-item strong {
     color: var(--sf-text);
     font-size: 0.88rem;
-}
-
-.wallet-actions {
-    display: flex;
 }
 
 @media (max-width: 767.98px) {

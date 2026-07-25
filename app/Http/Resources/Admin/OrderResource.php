@@ -33,6 +33,8 @@ class OrderResource extends JsonResource
             'billing_address_snapshot' => $this->billing_address_snapshot,
             'shipping_snapshot' => $this->shipping_snapshot,
             'tax_snapshot' => $this->tax_snapshot,
+            'shipping' => $this->whenLoaded('shipment', fn () => $this->shipment),
+            'invoice' => $this->whenLoaded('invoice', fn () => $this->invoice),
             'payment' => $this->whenLoaded('latestPayment', fn () => [
                 'gateway' => $this->latestPayment?->gateway,
                 'channel' => data_get($this->latestPayment?->metadata, 'payment_channel'),

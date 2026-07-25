@@ -25,7 +25,7 @@ class ProductController extends Controller
 
             $products = \App\Support\TaggedCache::tags(['products'])->remember($cacheKey, 3600, function () use ($filters, $userId) {
                 $query = Products::query()
-                    ->select('id', 'name', 'slug', 'price', 'image', 'categorey_id', 'brand_id', 'description')
+                    ->select('id', 'name', 'slug', 'price', 'image', 'category_id', 'brand_id', 'description')
                     ->with(['category:id,name,slug', 'brand:id,name', 'stocks:id,product_id,quantity'])
                     ->withAvg('reviews', 'rating')
                     ->withCount('reviews')
@@ -43,7 +43,7 @@ class ProductController extends Controller
                 }
 
                 if (!empty($filters['category_id']))
-                    $query->where('categorey_id', $filters['category_id']);
+                    $query->where('category_id', $filters['category_id']);
                 if (!empty($filters['category_slug'])) {
                     $query->whereHas('category', fn($category) => $category->where('slug', $filters['category_slug']));
                 }
@@ -127,13 +127,13 @@ class ProductController extends Controller
                     ->firstOrFail();
 
                 return Products::with(['category:id,name,slug', 'brand:id,name', 'stocks:id,product_id,quantity'])
-                    ->select('id', 'name', 'slug', 'price', 'image', 'categorey_id', 'brand_id')
+                    ->select('id', 'name', 'slug', 'price', 'image', 'category_id', 'brand_id')
                     ->withAvg('reviews', 'rating')
                     ->withCount('reviews')
                     ->whereKeyNot($productModel->id)
                     ->where('is_active', true)
                     ->where(function ($query) use ($productModel) {
-                        $query->where('categorey_id', $productModel->categorey_id)
+                        $query->where('category_id', $productModel->category_id)
                             ->orWhere('brand_id', $productModel->brand_id);
                     })
                     ->limit(8)

@@ -133,7 +133,7 @@ class AnalyticsService
         return $this->remember('top_categories', $filters, function () use ($filters) {
             return $this->paidItemsQuery($filters)
                 ->join('products', 'products.id', '=', 'order_items.product_id')
-                ->join('categories', 'categories.id', '=', 'products.categorey_id')
+                ->join('categories', 'categories.id', '=', 'products.category_id')
                 ->whereNull('products.deleted_at')
                 ->whereNull('categories.deleted_at')
                 ->selectRaw(

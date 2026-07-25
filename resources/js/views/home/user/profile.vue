@@ -12,6 +12,7 @@
             <div class="tabs">
                 <button :class="{ active: currentTab === 'overview' }" @click="currentTab = 'overview'">Overview</button>
                 <button :class="{ active: currentTab === 'edit' }" @click="currentTab = 'edit'">Edit profile</button>
+                <button :class="{ active: currentTab === 'addresses' }" @click="currentTab = 'addresses'">Addresses</button>
                 <button :class="{ active: currentTab === 'password' }" @click="currentTab = 'password'">Password</button>
             </div>
 
@@ -69,6 +70,62 @@
                     </button>
                 </div>
             </form>
+
+            <div v-if="currentTab === 'addresses'" class="tab-body">
+                <form class="form-grid" @submit.prevent="saveAddress">
+                    <label>
+                        Name
+                        <input v-model.trim="addressForm.name" class="store-input form-control" type="text" required />
+                    </label>
+                    <label>
+                        Phone
+                        <input v-model.trim="addressForm.phone" class="store-input form-control" type="text" required />
+                    </label>
+                    <label>
+                        City
+                        <input v-model.trim="addressForm.city" class="store-input form-control" type="text" required />
+                    </label>
+                    <label>
+                        Country
+                        <input v-model.trim="addressForm.country" class="store-input form-control" type="text" required />
+                    </label>
+                    <label class="full-field">
+                        Street
+                        <textarea v-model.trim="addressForm.street" class="store-textarea form-control" rows="2" required></textarea>
+                    </label>
+                    <label class="check-row">
+                        <input v-model="addressForm.is_default_shipping" type="checkbox" />
+                        Default shipping
+                    </label>
+                    <label class="check-row">
+                        <input v-model="addressForm.is_default_billing" type="checkbox" />
+                        Default billing
+                    </label>
+                    <button class="store-btn store-btn--primary" type="submit" :disabled="addressLoading">
+                        {{ addressLoading ? 'Saving...' : (addressForm.id ? 'Update address' : 'Add address') }}
+                    </button>
+                    <button v-if="addressForm.id" class="store-btn store-btn--soft" type="button" @click="resetAddressForm">
+                        Cancel edit
+                    </button>
+                </form>
+
+                <div class="address-list">
+                    <article v-for="address in addresses" :key="address.id" class="address-card">
+                        <div>
+                            <strong>{{ address.name }}</strong>
+                            <p>{{ [address.street || address.address, address.city, address.country].filter(Boolean).join(', ') }}</p>
+                            <span>{{ address.phone }}</span>
+                        </div>
+                        <div class="address-actions">
+                            <span v-if="address.is_default_shipping" class="address-chip">Shipping</span>
+                            <span v-if="address.is_default_billing" class="address-chip">Billing</span>
+                            <button type="button" class="store-btn store-btn--soft" @click="editAddress(address)">Edit</button>
+                            <button type="button" class="store-btn danger-btn" @click="deleteAddress(address.id)">Delete</button>
+                        </div>
+                    </article>
+                    <p v-if="!addresses.length" class="empty-note">No saved addresses yet.</p>
+                </div>
+            </div>
 
             <form v-if="currentTab === 'password'" class="tab-body form-grid" @submit.prevent="updatePassword">
                 <label>
@@ -141,6 +198,22 @@ const passwordData = ref({
     confirm_password: '',
 });
 
+const addresses = ref([]);
+const addressLoading = ref(false);
+const addressForm = ref({
+    id: null,
+    type: 'both',
+    name: '',
+    phone: '',
+    email: '',
+    country: 'Egypt',
+    country_code: 'EG',
+    city: '',
+    street: '',
+    is_default_shipping: false,
+    is_default_billing: false,
+});
+
 const statusMessage = ref('');
 const statusIsError = ref(false);
 
@@ -186,6 +259,16 @@ const fetchProfile = async () => {
     }
 };
 
+const fetchAddresses = async () => {
+    try {
+        const { data } = await api.get('/addresses');
+        const payload = data.data || [];
+        addresses.value = Array.isArray(payload) ? payload : (payload.data || []);
+    } catch {
+        showStatus('Unable to load addresses.', true);
+    }
+};
+
 const handleImageUpload = (event) => {
     const file = event.target.files?.[0] || null;
     editData.value.image = file;
@@ -225,6 +308,71 @@ const updateProfile = async () => {
         showStatus('Unable to update profile.', true);
     } finally {
         profileLoading.value = false;
+    }
+};
+
+const resetAddressForm = () => {
+    addressForm.value = {
+        id: null,
+        type: 'both',
+        name: user.value.name || '',
+        phone: user.value.phone || '',
+        email: user.value.email || '',
+        country: 'Egypt',
+        country_code: 'EG',
+        city: '',
+        street: '',
+        is_default_shipping: false,
+        is_default_billing: false,
+    };
+};
+
+const editAddress = (address) => {
+    addressForm.value = {
+        id: address.id,
+        type: address.type || 'both',
+        name: address.name || '',
+        phone: address.phone || '',
+        email: address.email || '',
+        country: address.country || 'Egypt',
+        country_code: address.country_code || 'EG',
+        city: address.city || '',
+        street: address.street || address.address || '',
+        is_default_shipping: Boolean(address.is_default_shipping),
+        is_default_billing: Boolean(address.is_default_billing),
+    };
+};
+
+const saveAddress = async () => {
+    addressLoading.value = true;
+    try {
+        const payload = { ...addressForm.value };
+        delete payload.id;
+        if (addressForm.value.id) {
+            await api.put(`/addresses/${addressForm.value.id}`, payload);
+        } else {
+            await api.post('/addresses', payload);
+        }
+        showStatus('Address saved successfully.');
+        resetAddressForm();
+        await fetchAddresses();
+    } catch (error) {
+        showStatus(error.response?.data?.message || 'Unable to save address.', true);
+    } finally {
+        addressLoading.value = false;
+    }
+};
+
+const deleteAddress = async (id) => {
+    addressLoading.value = true;
+    try {
+        await api.delete(`/addresses/${id}`);
+        showStatus('Address deleted successfully.');
+        await fetchAddresses();
+    } catch {
+        showStatus('Unable to delete address.', true);
+    } finally {
+        addressLoading.value = false;
     }
 };
 
@@ -282,7 +430,11 @@ const getImageUrl = (path) => {
     return `/storage/${path}`;
 };
 
-onMounted(fetchProfile);
+onMounted(async () => {
+    await fetchProfile();
+    resetAddressForm();
+    await fetchAddresses();
+});
 </script>
 
 <style scoped>
@@ -395,6 +547,10 @@ onMounted(fetchProfile);
     gap: 0.75rem;
 }
 
+.full-field {
+    grid-column: 1 / -1;
+}
+
 .form-grid label {
     display: grid;
     gap: 0.3rem;
@@ -414,6 +570,52 @@ onMounted(fetchProfile);
 .actions {
     display: flex;
     gap: 0.6rem;
+}
+
+.check-row {
+    display: flex !important;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.45rem !important;
+}
+
+.address-list {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.address-card {
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    border: 1px solid var(--sf-border);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    background: var(--sf-surface-soft);
+}
+
+.address-card p,
+.empty-note {
+    margin: 0.25rem 0;
+    color: var(--sf-muted);
+    font-size: 0.84rem;
+}
+
+.address-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.address-chip {
+    border: 1px solid var(--sf-border);
+    border-radius: 999px;
+    padding: 0.2rem 0.45rem;
+    color: var(--sf-muted);
+    font-size: 0.75rem;
 }
 
 .danger-btn {
@@ -442,6 +644,10 @@ onMounted(fetchProfile);
     }
 
     .actions {
+        flex-direction: column;
+    }
+
+    .address-card {
         flex-direction: column;
     }
 }

@@ -22,7 +22,7 @@ class Products extends Model
 
 
     protected $fillable = [
-        'categorey_id',
+        'category_id',
         'brand_id',
         'name',
         'image',
@@ -76,7 +76,7 @@ class Products extends Model
 
     public function category()
     {
-        return $this->belongsTo(Categories::class, 'categorey_id');
+        return $this->belongsTo(Categories::class, 'category_id');
     }
 
     public function brand()

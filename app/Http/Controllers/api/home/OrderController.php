@@ -4,23 +4,37 @@ namespace App\Http\Controllers\api\home;
 
 use App\Http\Controllers\concerns\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Home\OrderCheckoutResource;
 use App\Models\Orders;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
     use ApiResponse;
-    public function createOrder(Request $request)
+
+    public function index(Request $request)
     {
-        $data = $request->all();
-        $cart = auth()->user()->cart();
-        $items = $cart->items;
-        Orders::create();
-        return $this->success($request->all());
+        $orders = Orders::where('user_id', $request->user()->id)
+            ->with(['items.product:id,name,slug,image', 'shipment', 'invoice', 'latestPayment'])
+            ->latest()
+            ->paginate((int) $request->integer('per_page', 10));
+
+        return $this->success(OrderCheckoutResource::collection($orders), 'Orders loaded successfully.');
     }
 
-    public function orders(Request $request)
+    public function show(Request $request, int $id)
     {
-        return $this->success($request->all());
+        $order = Orders::where('user_id', $request->user()->id)
+            ->with([
+                'items.product:id,name,slug,image',
+                'shipment',
+                'invoice',
+                'latestPayment',
+                'returns.items',
+                'statusLogs.changedBy:id,name',
+            ])
+            ->findOrFail($id);
+
+        return $this->success(new OrderCheckoutResource($order), 'Order loaded successfully.');
     }
 }

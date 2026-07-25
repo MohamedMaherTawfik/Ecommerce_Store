@@ -9,11 +9,19 @@ class ProductResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $coverImage = $this->image;
+        if (! $coverImage && $this->resource->relationLoaded('firstImage')) {
+            $coverImage = $this->firstImage?->image;
+        }
+        if (! $coverImage && $this->resource->relationLoaded('images')) {
+            $coverImage = $this->images->first()?->image;
+        }
+
         return [
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
-            'image' => $this->image,
+            'image' => $coverImage,
             'description' => $this->when($this->resource->hasAttribute('description'), fn () => $this->description),
             'meta_title' => $this->when($this->resource->hasAttribute('meta_title'), fn () => $this->meta_title),
             'meta_description' => $this->when($this->resource->hasAttribute('meta_description'), fn () => $this->meta_description),

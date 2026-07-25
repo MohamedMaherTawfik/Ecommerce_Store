@@ -22,7 +22,7 @@ class StoreContactUsRequest extends FormRequest
             'message' => ['required', 'string'],
         ];
 
-        if (auth('sanctum')->check()) {
+        if ($this->user('sanctum')) {
             $rules['name'] = ['nullable'];
             $rules['email'] = ['nullable'];
         } else {

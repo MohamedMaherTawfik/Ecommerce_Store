@@ -27,7 +27,7 @@ class AnalyticsReportsTest extends TestCase
             'slug' => 'runner',
             'sku' => 'RUN-1',
             'price' => 25,
-            'categories_id' => $category->id,
+            'category_id' => $category->id,
         ]);
 
         $paid = $this->order($customer, 'PAID-1', 100, 'paid', 'delivered');

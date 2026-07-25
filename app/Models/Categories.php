@@ -60,6 +60,6 @@ class Categories extends Model
 
     public function products()
     {
-        return $this->hasMany(Products::class,'categorey_id');
+        return $this->hasMany(Products::class,'category_id');
     }
 }

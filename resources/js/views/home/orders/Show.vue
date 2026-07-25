@@ -3,32 +3,71 @@
         <header class="orders-header store-card">
             <div>
                 <span class="store-eyebrow">Orders</span>
-                <h1 class="store-title">Order tracking</h1>
-                <p class="store-subtitle">Track order status and timeline updates.</p>
+                <h1 class="store-title">{{ order ? order.order_number : 'My orders' }}</h1>
+                <p class="store-subtitle">Review order history, invoices, shipment status, and returns.</p>
             </div>
         </header>
 
-        <section class="tracker store-card">
-            <form class="tracker-form" @submit.prevent="fetchStatus">
-                <input v-model="orderId" class="store-input form-control" type="number" min="1" placeholder="Order ID" required />
-                <button class="store-btn store-btn--primary" :disabled="loading">{{ loading ? 'Loading...' : 'Track' }}</button>
-            </form>
+        <div v-if="loading" class="orders-loading store-card">Loading orders...</div>
 
-            <div v-if="error" class="tracker-alert tracker-alert--error">{{ error }}</div>
+        <section v-else-if="!order" class="orders-list store-card">
+            <div v-if="!orders.length" class="empty-state">
+                <i class="bi bi-bag-x"></i>
+                <h2>No orders yet</h2>
+                <RouterLink :to="`/${lang}/products`" class="store-btn store-btn--primary">Shop products</RouterLink>
+            </div>
 
-            <div v-if="order" class="tracking-body">
-                <div class="tracking-head">
-                    <div>
-                        <p>Order</p>
-                        <h2>{{ order.order_number }}</h2>
-                    </div>
-                    <div>
-                        <p>Total</p>
-                        <strong>{{ money(order.total || 0) }}</strong>
-                    </div>
+            <RouterLink
+                v-for="item in orders"
+                :key="item.id"
+                :to="`/${lang}/orders/${item.id}`"
+                class="order-row"
+            >
+                <div>
+                    <strong>{{ item.order_number }}</strong>
+                    <span>{{ formatDate(item.created_at) }}</span>
+                </div>
+                <div>
+                    <span>{{ item.order_status }}</span>
+                    <span>{{ item.payment_status }}</span>
+                </div>
+                <strong>{{ money(item.total, item.currency) }}</strong>
+            </RouterLink>
+        </section>
+
+        <template v-else>
+            <section class="order-detail store-card">
+                <div class="detail-head">
+                    <RouterLink :to="`/${lang}/orders`" class="store-btn store-btn--soft">Back to orders</RouterLink>
+                    <a
+                        v-if="order.invoice"
+                        class="store-btn store-btn--primary"
+                        :href="OrderService.invoiceUrl(order.id)"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        Download invoice
+                    </a>
+                </div>
+
+                <div class="facts">
+                    <div><span>Order status</span><strong>{{ order.order_status }}</strong></div>
+                    <div><span>Payment</span><strong>{{ order.payment_status }}</strong></div>
+                    <div><span>Shipping</span><strong>{{ order.shipping_status }}</strong></div>
+                    <div><span>Total</span><strong>{{ money(order.total, order.currency) }}</strong></div>
+                </div>
+
+                <div class="items">
+                    <h2>Items</h2>
+                    <article v-for="item in order.items || []" :key="item.id" class="item-row">
+                        <span>{{ item.product_name || item.product?.name || `Product #${item.product_id}` }}</span>
+                        <span>x{{ item.quantity }}</span>
+                        <strong>{{ money(item.total_price || item.price, order.currency) }}</strong>
+                    </article>
                 </div>
 
                 <div class="timeline">
+                    <h2>Timeline</h2>
                     <article v-for="log in order.timeline || []" :key="log.id" class="timeline-row">
                         <span class="timeline-dot"></span>
                         <div>
@@ -36,169 +75,239 @@
                             <p>{{ formatDate(log.created_at) }} {{ log.note ? `- ${log.note}` : '' }}</p>
                         </div>
                     </article>
+                    <p v-if="!order.timeline?.length" class="muted">No timeline updates yet.</p>
                 </div>
-            </div>
+            </section>
 
-            <div v-else-if="!loading" class="tracker-empty">
-                Enter order ID to view timeline.
-            </div>
-        </section>
+            <section class="returns-panel store-card">
+                <h2>Returns</h2>
+                <div v-if="order.returns?.length" class="return-list">
+                    <article v-for="item in order.returns" :key="item.id" class="return-row">
+                        <div>
+                            <strong>Return #{{ item.id }}</strong>
+                            <span>{{ item.status }}</span>
+                        </div>
+                        <p>{{ item.reason }}</p>
+                    </article>
+                </div>
+                <form class="return-form" @submit.prevent="submitReturn">
+                    <textarea v-model.trim="returnForm.reason" class="store-textarea form-control" rows="3" required maxlength="1000" placeholder="Reason for return"></textarea>
+                    <textarea v-model.trim="returnForm.notes" class="store-textarea form-control" rows="2" maxlength="1000" placeholder="Additional notes"></textarea>
+                    <button class="store-btn store-btn--primary" :disabled="busy">Request return</button>
+                </form>
+            </section>
+        </template>
     </main>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { RouterLink, useRoute } from 'vue-router';
 import { useSeoMeta } from '@/composables/useSeoMeta';
+import toastr from 'toastr';
 import OrderService from '@/services/home/OrderService';
 
 const route = useRoute();
-const orderId = ref(route.params.id || '');
+const lang = computed(() => route.params.lang || localStorage.getItem('language') || 'en');
+const orders = ref([]);
 const order = ref(null);
+const loading = ref(false);
+const busy = ref(false);
+const returnForm = reactive({ reason: '', notes: '' });
 
 useSeoMeta({
-    title: () => order.value ? `Order ${order.value.order_number}` : 'Order Tracking',
-    description: 'Track your EliteShop order status and timeline updates.',
+    title: () => order.value ? `Order ${order.value.order_number}` : 'My Orders',
+    description: 'Review your EliteShop orders, invoices, shipment status, and returns.',
     robots: 'noindex,nofollow'
 });
 
-const loading = ref(false);
-const error = ref('');
-
-const fetchStatus = async () => {
-    if (!orderId.value) {
-        return;
-    }
-
+const loadOrders = async () => {
     loading.value = true;
-    error.value = '';
-
     try {
-        order.value = await OrderService.status(orderId.value);
+        const payload = await OrderService.list();
+        orders.value = Array.isArray(payload?.data) ? payload.data : [];
+        order.value = null;
     } catch {
-        error.value = 'Unable to fetch order status right now.';
+        toastr.error('Unable to load orders.');
     } finally {
         loading.value = false;
     }
 };
 
-const money = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0));
-const formatDate = (value) => value ? new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '';
-
-onMounted(async () => {
-    if (orderId.value) {
-        await fetchStatus();
+const loadOrder = async (id) => {
+    loading.value = true;
+    try {
+        order.value = await OrderService.show(id);
+    } catch {
+        toastr.error('Unable to load order.');
+    } finally {
+        loading.value = false;
     }
-});
+};
+
+const submitReturn = async () => {
+    if (!order.value) return;
+    busy.value = true;
+    try {
+        await OrderService.createReturn(order.value.id, {
+            ...returnForm,
+            items: (order.value.items || []).map((item) => ({
+                order_item_id: item.id,
+                quantity: item.quantity,
+                reason: returnForm.reason,
+            })),
+        });
+        returnForm.reason = '';
+        returnForm.notes = '';
+        toastr.success('Return request submitted.');
+        await loadOrder(order.value.id);
+    } catch (error) {
+        toastr.error(error.response?.data?.message || 'Unable to request return.');
+    } finally {
+        busy.value = false;
+    }
+};
+
+const load = async () => {
+    if (route.params.id) await loadOrder(route.params.id);
+    else await loadOrders();
+};
+
+const money = (value, currency = 'EGP') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(value || 0));
+const formatDate = (value) => value ? new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '-';
+
+watch(() => route.params.id, load);
+onMounted(load);
 </script>
 
 <style scoped>
-.orders-page {
+.orders-page,
+.order-detail,
+.returns-panel {
     display: grid;
     gap: 1rem;
 }
 
-.orders-header {
-    padding: 1.2rem;
-}
-
-.tracker {
-    display: grid;
-    gap: 0.9rem;
+.orders-header,
+.orders-loading,
+.orders-list,
+.order-detail,
+.returns-panel {
     padding: 1rem;
 }
 
-.tracker-form {
+.empty-state {
+    min-height: 260px;
     display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 0.65rem;
+    place-items: center;
+    gap: 0.6rem;
+    text-align: center;
 }
 
-.tracker-alert {
-    padding: 0.65rem 0.8rem;
-    border-radius: 0.7rem;
-    font-size: 0.86rem;
-}
-
-.tracker-alert--error {
-    background: color-mix(in srgb, var(--sf-danger) 14%, transparent);
-    color: var(--sf-danger);
-}
-
-.tracking-body {
-    display: grid;
-    gap: 1rem;
-}
-
-.tracking-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-}
-
-.tracking-head p {
-    margin: 0;
+.empty-state i {
     color: var(--sf-muted);
-    font-size: 0.8rem;
+    font-size: 1.8rem;
 }
 
-.tracking-head h2 {
-    margin: 0.2rem 0 0;
+.order-row,
+.item-row,
+.return-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--sf-border);
     color: var(--sf-text);
-    font-size: 1.2rem;
-    font-weight: 800;
+    text-decoration: none;
 }
 
-.tracking-head strong {
+.order-row div,
+.return-row div {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.order-row span,
+.return-row span,
+.muted {
+    color: var(--sf-muted);
+    font-size: 0.84rem;
+}
+
+.detail-head {
+    display: flex;
+    gap: 0.7rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.7rem;
+}
+
+.facts div {
+    padding: 0.75rem;
+    border: 1px solid var(--sf-border);
+    border-radius: 0.75rem;
+    background: var(--sf-surface-soft);
+}
+
+.facts span {
+    display: block;
+    color: var(--sf-muted);
+    font-size: 0.78rem;
+}
+
+.items h2,
+.timeline h2,
+.returns-panel h2 {
+    margin: 0 0 0.7rem;
     color: var(--sf-text);
-    font-size: 1.1rem;
-}
-
-.timeline {
-    border-top: 1px solid var(--sf-border);
+    font-size: 1.05rem;
 }
 
 .timeline-row {
     display: flex;
-    gap: 0.8rem;
-    padding: 0.85rem 0;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
     border-bottom: 1px solid var(--sf-border);
 }
 
 .timeline-dot {
-    width: 13px;
-    height: 13px;
+    width: 12px;
+    height: 12px;
     margin-top: 0.35rem;
     border-radius: 999px;
     background: var(--sf-primary);
     flex: 0 0 auto;
 }
 
-.timeline-row strong {
-    color: var(--sf-text);
-    font-size: 0.9rem;
-}
-
-.timeline-row p {
-    margin: 0.3rem 0 0;
+.timeline-row p,
+.return-row p {
+    margin: 0.25rem 0 0;
     color: var(--sf-muted);
-    font-size: 0.82rem;
+    font-size: 0.84rem;
 }
 
-.tracker-empty {
-    color: var(--sf-muted);
-    font-size: 0.9rem;
+.return-list,
+.return-form {
+    display: grid;
+    gap: 0.7rem;
 }
 
-@media (max-width: 575.98px) {
-    .tracker-form {
+.return-form {
+    margin-top: 0.6rem;
+}
+
+@media (max-width: 767.98px) {
+    .facts,
+    .order-row,
+    .item-row,
+    .return-row {
         grid-template-columns: 1fr;
-    }
-
-    .tracking-head {
-        flex-direction: column;
-        align-items: flex-start;
     }
 }
 </style>

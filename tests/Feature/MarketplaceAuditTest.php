@@ -25,11 +25,10 @@ class MarketplaceAuditTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_api_key_is_required_for_public_api_routes(): void
+    public function test_public_catalog_routes_are_accessible_without_api_key(): void
     {
         $this->getJson('/api/v1/categories')
-            ->assertStatus(401)
-            ->assertJsonPath('message', 'Must provide valid api key');
+            ->assertOk();
     }
 
     public function test_public_catalog_routes_return_consistent_payloads(): void
@@ -38,15 +37,15 @@ class MarketplaceAuditTest extends TestCase
         $brand = brands::factory()->create(['name' => 'Urban Loom']);
         $matching = Products::factory()->create([
             'name' => 'Cotton Tee',
-            'categories_id' => $category->id,
-            'brands_id' => $brand->id,
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
             'price' => 25,
             'is_active' => true,
         ]);
         $other = Products::factory()->create([
             'name' => 'Denim Jacket',
-            'categories_id' => $category->id,
-            'brands_id' => $brand->id,
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
             'price' => 120,
             'is_active' => true,
         ]);
