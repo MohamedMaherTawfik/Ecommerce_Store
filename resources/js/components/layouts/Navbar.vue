@@ -3,9 +3,9 @@
         <div class="store-nav__inner">
             <RouterLink :to="`/${lang}`" class="store-nav__brand">
                 <img :src="layoutData.navbar?.value || 'images/ai_logo.webp'"
-                    :alt="`${layoutData.navbar?.brand || 'EliteShop'} logo`" width="38" height="38"
+                    :alt="`${layoutData.navbar?.brand || 'Emmy'} logo`" width="38" height="38"
                     decoding="async" fetchpriority="high" />
-                <span>{{ layoutData.navbar?.brand || 'EliteShop' }}</span>
+                <span>{{ layoutData.navbar?.brand || 'Emmy' }}</span>
             </RouterLink>
 
             <!-- <nav class="store-nav__links d-none d-lg-flex">
@@ -33,9 +33,9 @@
                     <i class="bi" :class="theme === 'dark' ? 'bi-sun' : 'bi-moon'"></i>
                 </button> -->
 
-                <RouterLink v-if="isLoggedIn" class="icon-btn" :to="`/${lang}/wishlist`" :title="t('nav.wishlist')">
+                <!-- <RouterLink v-if="isLoggedIn" class="icon-btn" :to="`/${lang}/wishlist`" :title="t('nav.wishlist')">
                     <i class="bi bi-heart"></i>
-                </RouterLink>
+                </RouterLink> -->
 
                 <button v-if="isLoggedIn" class="icon-btn icon-btn--count" type="button" @click="goToCart"
                     :title="t('nav.cart')">
@@ -50,9 +50,9 @@
                             <span>{{ userName }}</span>
                             <i class="bi" :class="dropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
                         </button>
-                        <button class="icon-btn d-sm-none" type="button" @click="dropdownOpen = !dropdownOpen">
+                        <!-- <button class="icon-btn d-sm-none" type="button" @click="dropdownOpen = !dropdownOpen">
                             <i class="bi bi-person"></i>
-                        </button>
+                        </button> -->
                         <div v-if="dropdownOpen" class="user-menu">
                             <RouterLink :to="`/${lang}/profile`" class="user-menu__item">{{ t('nav.profile') }}
                             </RouterLink>
