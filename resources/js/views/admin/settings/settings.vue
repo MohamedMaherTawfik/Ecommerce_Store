@@ -89,6 +89,7 @@
                                                     :help="field.help"
                                                     :options="field.options"
                                                     :disabled="submitting"
+                                                    :configured="Boolean(secretStatus[field.key])"
                                                     :fullWidth="['GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URL', 'PAYMOB_SECRET_KEY', 'PAYMOB_HMAC_SECRET', 'MAIL_PASSWORD', 'AWS_SECRET_ACCESS_KEY'].includes(field.key)"
                                                 >
                                                     <template v-if="field.key === 'GOOGLE_REDIRECT_URL'">
@@ -169,6 +170,7 @@ const tabs = ref([]);
 const form = ref({});
 const initialForm = ref({});
 const testEmailRecipient = ref("");
+const secretStatus = ref({});
 
 const currentTab = computed(() => tabs.value.find((tab) => tab.key === activeTab.value) || { fields: [] });
 const currentTabHeading = computed(() => `${currentTab.value.label} Configuration`);
@@ -224,14 +226,22 @@ const hydratePage = (payload = {}) => {
     permission.value = payload.permission || "manage_application_settings";
 
     const newForm = {};
+    const newSecretStatus = {};
     tabs.value.forEach(tab => {
         tab.fields.forEach(field => {
-            newForm[field.key] = incomingValues[field.key] !== undefined ? incomingValues[field.key] : "";
+            const incoming = incomingValues[field.key];
+            if (field.type === "password") {
+                newForm[field.key] = "";
+                newSecretStatus[field.key] = Boolean(incoming?.configured);
+            } else {
+                newForm[field.key] = incoming !== undefined ? incoming : "";
+            }
         });
     });
 
     form.value = { ...newForm };
     initialForm.value = { ...newForm };
+    secretStatus.value = newSecretStatus;
     
     if (payload.meta?.test_mail_recipient) {
         testEmailRecipient.value = payload.meta.test_mail_recipient;

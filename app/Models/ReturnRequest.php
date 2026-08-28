@@ -16,11 +16,13 @@ class ReturnRequest extends Model
         'approved_by',
         'approved_at',
         'rejected_at',
+        'stock_restored_at',
     ];
 
     protected $casts = [
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
+        'stock_restored_at' => 'datetime',
     ];
 
     public function order()
@@ -36,5 +38,10 @@ class ReturnRequest extends Model
     public function items()
     {
         return $this->hasMany(ReturnRequestItem::class);
+    }
+
+    public function refunds()
+    {
+        return $this->hasMany(Refund::class);
     }
 }

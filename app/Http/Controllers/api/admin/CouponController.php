@@ -6,6 +6,7 @@ use App\Http\Controllers\concerns\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CouponRequest;
 use App\Models\Coupon;
+use App\Support\TaggedCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -25,14 +26,14 @@ class CouponController extends Controller
             $page = $request->input('page', 1);
             $search = $request->query('search');
 
-            $cacheKey = "coupons_page_{$page}_search_" . md5($search);
+            $cacheKey = "coupons_page_{$page}_search_".md5($search);
 
-            $coupons = \App\Support\TaggedCache::tags(['coupons'])->remember(
+            $coupons = TaggedCache::tags(['coupons'])->remember(
                 $cacheKey,
                 $this->cacheTime,
                 function () use ($request, $search) {
                     return Coupon::query()
-                        ->when($search, fn($q) => $q->where('code', 'like', "%{$search}%"))
+                        ->when($search, fn ($q) => $q->where('code', 'like', "%{$search}%"))
                         ->latest()
                         ->paginate($request->integer('per_page', 15));
                 }
@@ -41,6 +42,7 @@ class CouponController extends Controller
             return $this->success($coupons, 'Coupons');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
@@ -55,7 +57,7 @@ class CouponController extends Controller
 
             $coupon = Coupon::create($request->validated());
 
-            \App\Support\TaggedCache::tags(['coupons'])->flush();
+            TaggedCache::tags(['coupons'])->flush();
 
             DB::commit();
 
@@ -63,6 +65,7 @@ class CouponController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
@@ -73,15 +76,16 @@ class CouponController extends Controller
     public function show(int $id)
     {
         try {
-            $coupon = \App\Support\TaggedCache::tags(['coupons'])->remember(
+            $coupon = TaggedCache::tags(['coupons'])->remember(
                 "coupon_$id",
                 $this->cacheTime,
-                fn() => Coupon::findOrFail($id)
+                fn () => Coupon::findOrFail($id)
             );
 
             return $this->success($coupon, 'Coupon details.');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
@@ -98,7 +102,7 @@ class CouponController extends Controller
 
             $coupon->update($request->validated());
 
-            \App\Support\TaggedCache::tags(['coupons'])->flush();
+            TaggedCache::tags(['coupons'])->flush();
 
             DB::commit();
 
@@ -106,6 +110,7 @@ class CouponController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
@@ -122,7 +127,7 @@ class CouponController extends Controller
 
             $coupon->delete();
 
-            \App\Support\TaggedCache::tags(['coupons'])->flush();
+            TaggedCache::tags(['coupons'])->flush();
 
             DB::commit();
 
@@ -130,9 +135,8 @@ class CouponController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
 }
-
-

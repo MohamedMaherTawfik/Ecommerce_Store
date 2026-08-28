@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SiteSetting extends Model
 {
     protected $table = 'site_settings';
+
     protected $fillable = [
         'key',
         'value',
@@ -18,6 +19,7 @@ class SiteSetting extends Model
     public static function getValue(string $key, $default = null)
     {
         $setting = static::where('key', $key)->first();
+
         return $setting ? $setting->value : $default;
     }
 

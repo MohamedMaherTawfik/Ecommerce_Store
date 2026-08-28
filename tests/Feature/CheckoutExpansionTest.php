@@ -97,6 +97,7 @@ class CheckoutExpansionTest extends TestCase
             'shipping_address_id' => $addressId,
             'payment_method' => 'paymob',
             'payment_channel' => 'card',
+            'idempotency_key' => 'checkout-expansion-001',
         ])
             ->assertOk()
             ->assertJsonPath('data.order.payment_status', 'pending')

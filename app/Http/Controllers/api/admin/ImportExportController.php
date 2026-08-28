@@ -14,9 +14,11 @@ use App\Support\TaggedCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Excel as ExcelFormat;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use ZipArchive;
 
 class ImportExportController extends Controller
 {
@@ -90,10 +92,55 @@ class ImportExportController extends Controller
 
     private function validateImport(Request $request): array
     {
-        return $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240'],
+        $validated = $request->validate([
+            'file' => [
+                'required',
+                'file',
+                'extensions:xlsx,xls,csv',
+                'mimes:xlsx,xls,csv',
+                'mimetypes:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/plain,application/csv,application/zip',
+                'max:5120',
+            ],
             'update_existing' => ['sometimes', 'boolean'],
         ]);
+
+        if (strtolower($validated['file']->getClientOriginalExtension()) === 'xlsx') {
+            $this->assertSafeArchive($validated['file']->getRealPath());
+        }
+
+        return $validated;
+    }
+
+    private function assertSafeArchive(string $path): void
+    {
+        $archive = new ZipArchive;
+        if ($archive->open($path) !== true) {
+            throw ValidationException::withMessages(['file' => ['The XLSX archive is malformed.']]);
+        }
+
+        try {
+            $totalUncompressed = 0;
+            if ($archive->numFiles > 250) {
+                throw ValidationException::withMessages(['file' => ['The XLSX archive contains too many entries.']]);
+            }
+
+            for ($index = 0; $index < $archive->numFiles; $index++) {
+                $stats = $archive->statIndex($index);
+                $size = (int) ($stats['size'] ?? 0);
+                $compressed = max(1, (int) ($stats['comp_size'] ?? 1));
+                $totalUncompressed += $size;
+
+                if ($size > 10 * 1024 * 1024 || $size / $compressed > 100) {
+                    throw ValidationException::withMessages(['file' => ['The XLSX archive exceeds safe expansion limits.']]);
+                }
+            }
+
+            if ($totalUncompressed > 25 * 1024 * 1024) {
+                throw ValidationException::withMessages(['file' => ['The XLSX archive is too large when expanded.']]);
+            }
+        } finally {
+            $archive->close();
+        }
     }
 
     private function extension(Request $request): string

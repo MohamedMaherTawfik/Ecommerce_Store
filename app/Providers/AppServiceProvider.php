@@ -42,8 +42,12 @@ use App\Services\Installer\EnvironmentSetupService;
 use App\Services\Installer\InstallationStateService;
 use App\Services\SettingsService;
 use App\Support\TaggedCache;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -61,6 +65,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('admin-login', function (Request $request) {
+            $identity = Str::lower(trim((string) $request->input('email')));
+
+            return Limit::perMinute(5)->by(hash('sha256', $identity.'|'.$request->ip()));
+        });
+
         if ($this->app->runningInConsole()) {
             $this->app->make(EnvironmentSetupService::class)->ensureBootstrapState();
             $this->app->make(InstallationStateService::class)->logState('app_boot');

@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\api\home;
 
+use App\Http\Controllers\concerns\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Home\ProductIndexRequest;
-use App\Http\Controllers\concerns\ApiResponse;
 use App\Http\Resources\Home\ProductResource;
 use App\Models\Products;
+use App\Support\TaggedCache;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -21,9 +22,9 @@ class ProductController extends Controller
             $filters = $request->validated();
             $userId = $request->user()?->id;
 
-            $cacheKey = 'products_index_' . md5(json_encode($filters) . '_' . $userId);
+            $cacheKey = 'products_index_'.md5(json_encode($filters).'_'.$userId);
 
-            $products = \App\Support\TaggedCache::tags(['products'])->remember($cacheKey, 3600, function () use ($filters, $userId) {
+            $products = TaggedCache::tags(['products'])->remember($cacheKey, 3600, function () use ($filters, $userId) {
                 $query = Products::query()
                     ->select('id', 'name', 'slug', 'price', 'image', 'category_id', 'brand_id', 'description')
                     ->with(['category:id,name,slug', 'brand:id,name', 'stocks:id,product_id,quantity'])
@@ -32,37 +33,42 @@ class ProductController extends Controller
                     ->where('is_active', true);
 
                 if ($userId) {
-                    $query->withExists(['wishlists as is_wishlisted' => fn($q) => $q->where('user_id', $userId)]);
+                    $query->withExists(['wishlists as is_wishlisted' => fn ($q) => $q->where('user_id', $userId)]);
                 }
 
-                if (!empty($filters['search'])) {
+                if (! empty($filters['search'])) {
                     $query->where(function ($q) use ($filters) {
                         $q->where('name', 'like', "%{$filters['search']}%")
                             ->orWhere('description', 'like', "%{$filters['search']}%");
                     });
                 }
 
-                if (!empty($filters['category_id']))
+                if (! empty($filters['category_id'])) {
                     $query->where('category_id', $filters['category_id']);
-                if (!empty($filters['category_slug'])) {
-                    $query->whereHas('category', fn($category) => $category->where('slug', $filters['category_slug']));
                 }
-                if (!empty($filters['brand_id']))
+                if (! empty($filters['category_slug'])) {
+                    $query->whereHas('category', fn ($category) => $category->where('slug', $filters['category_slug']));
+                }
+                if (! empty($filters['brand_id'])) {
                     $query->where('brand_id', $filters['brand_id']);
-                if (!empty($filters['min_price']))
+                }
+                if (! empty($filters['min_price'])) {
                     $query->where('price', '>=', $filters['min_price']);
-                if (!empty($filters['max_price']))
+                }
+                if (! empty($filters['max_price'])) {
                     $query->where('price', '<=', $filters['max_price']);
+                }
 
                 $sort = $filters['sort'] ?? 'newest';
-                if ($sort === 'price_asc')
+                if ($sort === 'price_asc') {
                     $query->orderBy('price');
-                elseif ($sort === 'price_desc')
+                } elseif ($sort === 'price_desc') {
                     $query->orderByDesc('price');
-                elseif ($sort === 'rating')
+                } elseif ($sort === 'rating') {
                     $query->orderByDesc('reviews_avg_rating');
-                else
+                } else {
                     $query->latest();
+                }
 
                 $paginated = $query->paginate($filters['per_page'] ?? 12);
 
@@ -74,6 +80,7 @@ class ProductController extends Controller
             return $this->notFound('Product not found');
         } catch (\Throwable $e) {
             Log::info($e->getMessage());
+
             return $this->error('Something went wrong.', 500);
         }
     }
@@ -83,7 +90,7 @@ class ProductController extends Controller
         try {
             $userId = request()->user()?->id;
 
-            $productModel = \App\Support\TaggedCache::tags(['products'])->remember("product_show_{$product}_{$userId}", 3600, function () use ($product, $userId) {
+            $productModel = TaggedCache::tags(['products'])->remember("product_show_{$product}_{$userId}", 3600, function () use ($product, $userId) {
                 $prod = Products::with([
                     'category:id,name,slug',
                     'brand:id,name',
@@ -92,19 +99,19 @@ class ProductController extends Controller
                     'sizes:id,product_id,size',
                     'colors:id,product_id,color',
                     'reviews:id,product_id,user_id,rating,comment,created_at',
-                    'reviews.user:id,name'
+                    'reviews.user:id,name',
                 ])
                     ->withAvg('reviews', 'rating')
                     ->withCount('reviews');
 
                 if ($userId) {
-                    $prod->withExists(['wishlists as is_wishlisted' => fn($q) => $q->where('user_id', $userId)]);
+                    $prod->withExists(['wishlists as is_wishlisted' => fn ($q) => $q->where('user_id', $userId)]);
                 }
 
                 return $prod
                     ->where('is_active', true)
-                    ->where(fn($query) => $query->where('slug', $product)
-                        ->when(ctype_digit($product), fn($query) => $query->orWhere('id', (int) $product)))
+                    ->where(fn ($query) => $query->where('slug', $product)
+                        ->when(ctype_digit($product), fn ($query) => $query->orWhere('id', (int) $product)))
                     ->firstOrFail();
             });
 
@@ -113,6 +120,7 @@ class ProductController extends Controller
             return $this->notFound('Product not found');
         } catch (\Throwable $e) {
             Log::info($e->getMessage());
+
             return $this->error('Something went wrong.', 500);
         }
     }
@@ -120,10 +128,10 @@ class ProductController extends Controller
     public function related(string $product)
     {
         try {
-            $related = \App\Support\TaggedCache::tags(['products'])->remember("product_related_{$product}", 3600, function () use ($product) {
+            $related = TaggedCache::tags(['products'])->remember("product_related_{$product}", 3600, function () use ($product) {
                 $productModel = Products::query()
-                    ->where(fn($query) => $query->where('slug', $product)
-                        ->when(ctype_digit($product), fn($query) => $query->orWhere('id', (int) $product)))
+                    ->where(fn ($query) => $query->where('slug', $product)
+                        ->when(ctype_digit($product), fn ($query) => $query->orWhere('id', (int) $product)))
                     ->firstOrFail();
 
                 return Products::with(['category:id,name,slug', 'brand:id,name', 'stocks:id,product_id,quantity'])
@@ -145,6 +153,7 @@ class ProductController extends Controller
             return $this->notFound('Product not found');
         } catch (\Throwable $e) {
             Log::info($e->getMessage());
+
             return $this->error('Something went wrong.', 500);
         }
     }
@@ -152,7 +161,7 @@ class ProductController extends Controller
     public function latestFour(Request $request)
     {
         try {
-            $products = \App\Support\TaggedCache::tags(['products'])
+            $products = TaggedCache::tags(['products'])
                 ->remember('products_latest_three', 21600, function () {
                     return Products::with('firstImage')
                         ->select('id', 'name', 'slug', 'price', 'image')
@@ -170,6 +179,7 @@ class ProductController extends Controller
             return $this->notFound('Products not found');
         } catch (\Throwable $e) {
             Log::info($e->getMessage());
+
             return $this->error('Something went wrong.', 500);
         }
     }
@@ -177,7 +187,7 @@ class ProductController extends Controller
     public function randomThree(Request $request)
     {
         try {
-            $products = \App\Support\TaggedCache::tags(['products'])
+            $products = TaggedCache::tags(['products'])
                 ->remember('products_random_three', 21600, function () {
                     return Products::with('firstImage')
                         ->select('id', 'name', 'slug', 'price', 'image')
@@ -200,11 +210,10 @@ class ProductController extends Controller
         }
     }
 
-
     public function randomFour(Request $request)
     {
         try {
-            $products = \App\Support\TaggedCache::tags(['products'])
+            $products = TaggedCache::tags(['products'])
                 ->remember('products_random_four', 21600, function () {
                     return Products::with('firstImage')
                         ->select('id', 'name', 'slug', 'price', 'image')
@@ -222,6 +231,7 @@ class ProductController extends Controller
             return $this->notFound('Products not found');
         } catch (\Throwable $e) {
             Log::info($e->getMessage());
+
             return $this->error('Something went wrong.', 500);
         }
     }
@@ -229,7 +239,7 @@ class ProductController extends Controller
     public function featured(Request $request)
     {
         try {
-            $products = \App\Support\TaggedCache::tags(['products'])
+            $products = TaggedCache::tags(['products'])
                 ->remember('products_featured_four', 21600, function () {
                     return Products::with('firstImage')
                         ->select('id', 'name', 'slug', 'price', 'image')
@@ -248,13 +258,13 @@ class ProductController extends Controller
             return $this->notFound('Products not found');
         } catch (\Throwable $e) {
             Log::info($e->getMessage());
+
             return $this->error('Something went wrong.', 500);
         }
     }
 
-
     public function clearCache()
     {
-        \App\Support\TaggedCache::tags(['products'])->flush();
+        TaggedCache::tags(['products'])->flush();
     }
 }

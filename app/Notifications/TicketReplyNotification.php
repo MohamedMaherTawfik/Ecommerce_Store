@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Ticket;
 use App\Models\TicketMessage;
+use App\Queue\QueueRetryPolicy;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -11,7 +12,7 @@ use Illuminate\Notifications\Notification;
 
 class TicketReplyNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, QueueRetryPolicy;
 
     public function __construct(
         private readonly Ticket $ticket,

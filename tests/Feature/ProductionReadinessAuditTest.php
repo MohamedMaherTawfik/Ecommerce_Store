@@ -18,16 +18,14 @@ class ProductionReadinessAuditTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_frontend_api_key_matches_the_backend_configuration(): void
+    public function test_frontend_does_not_ship_a_privileged_api_key(): void
     {
-        $source = file_get_contents(resource_path('js/services/ApiClient.js'));
+        $source = file_get_contents(resource_path('js/services/ApiClient.js'))
+            .file_get_contents(resource_path('js/services/AdminApiClient.js'));
 
         $this->assertIsString($source);
-        $this->assertSame(1, preg_match("/const apiKey\\s*=\\s*['\"]([^'\"]+)['\"]/", $source, $matches));
-        $this->assertTrue(
-            hash_equals((string) config('services.api.key'), $matches[1]),
-            'The browser API key does not match the server configuration.'
-        );
+        $this->assertDoesNotMatchRegularExpression('/(?:api.?key|x-api-key)\s*[:=]/i', $source);
+        $this->assertStringNotContainsString('auth_token', $source);
     }
 
     public function test_admin_login_is_rate_limited(): void
@@ -84,6 +82,8 @@ class ProductionReadinessAuditTest extends TestCase
         Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
         $service = app(ReturnService::class);
 
+        $service->updateStatus($return, 'received');
+        $return = $return->fresh(['order']);
         $service->refund($return, ['amount' => 20]);
         $service->refund($return->fresh('order'), ['amount' => 20]);
 

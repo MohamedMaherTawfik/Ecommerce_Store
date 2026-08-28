@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Http\Controllers\concerns;
+
 use Illuminate\Http\JsonResponse;
+
 trait authApiResponse
 {
     public function success($data = [], $message = 'Authenticated Successfully'): JsonResponse

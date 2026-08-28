@@ -2,8 +2,8 @@
 
 namespace App\Services\Checkout;
 
-use App\Models\ProductVariant;
 use App\Models\Products;
+use App\Models\ProductVariant;
 use App\Models\Stock;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -17,9 +17,10 @@ class InventoryService
 
             if ($item->product_variant_id) {
                 $variant = ProductVariant::whereKey($item->product_variant_id)->lockForUpdate()->first();
-                if (!$variant || (!$variant->product?->allow_backorder && $variant->stock_quantity < $quantity)) {
+                if (! $variant || (! $variant->product?->allow_backorder && $variant->stock_quantity < $quantity)) {
                     throw ValidationException::withMessages(['stock' => ['Selected variant is out of stock.']]);
                 }
+
                 continue;
             }
 
@@ -27,7 +28,7 @@ class InventoryService
             $stock = Stock::where('product_id', $item->product_id)->lockForUpdate()->first();
             $available = $stock ? (int) $stock->quantity : (int) ($product?->stock_quantity ?? 0);
 
-            if (!$product || (!$product->allow_backorder && $available < $quantity)) {
+            if (! $product || (! $product->allow_backorder && $available < $quantity)) {
                 throw ValidationException::withMessages(['stock' => ["{$item->product?->name} is out of stock."]]);
             }
         }
@@ -40,6 +41,7 @@ class InventoryService
 
             if ($item->product_variant_id) {
                 ProductVariant::whereKey($item->product_variant_id)->decrement('stock_quantity', $quantity);
+
                 continue;
             }
 
@@ -59,6 +61,7 @@ class InventoryService
 
             if ($item->product_variant_id) {
                 ProductVariant::whereKey($item->product_variant_id)->increment('stock_quantity', $quantity);
+
                 continue;
             }
 

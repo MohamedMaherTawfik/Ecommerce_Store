@@ -1,10 +1,11 @@
 <?php
 
 namespace App\Http\Controllers\concerns;
+
 use Illuminate\Http\JsonResponse;
+
 trait ApiResponse
 {
-
     public function success($data = [], $message = 'Operation completed successfully'): JsonResponse
     {
         return response()->json([

@@ -8,9 +8,7 @@ use RuntimeException;
 
 class EnvironmentSetupService
 {
-    public function __construct(private readonly InstallationStateService $installationState)
-    {
-    }
+    public function __construct(private readonly InstallationStateService $installationState) {}
 
     public function ensureBootstrapState(): void
     {
@@ -31,7 +29,7 @@ class EnvironmentSetupService
         $examplePath = base_path('.env.example');
 
         if (File::exists($examplePath)) {
-            if (!File::copy($examplePath, $envPath)) {
+            if (! File::copy($examplePath, $envPath)) {
                 throw new RuntimeException("Failed to copy .env.example to {$envPath}");
             }
 
@@ -59,11 +57,11 @@ class EnvironmentSetupService
             $value = trim((string) ($value ?? ''));
 
             if ($value !== '' && preg_match('/[\s#="\'`$\\\\]/', $value)) {
-                $value = '"' . addcslashes($value, "\\\"$") . '"';
+                $value = '"'.addcslashes($value, '\\"$').'"';
             }
 
             $newLine = "{$key}={$value}";
-            $pattern = '/^' . preg_quote($key, '/') . '=.*$/m';
+            $pattern = '/^'.preg_quote($key, '/').'=.*$/m';
 
             if (preg_match($pattern, $content) === 1) {
                 $content = preg_replace($pattern, $newLine, $content, 1) ?? $content;
@@ -72,10 +70,10 @@ class EnvironmentSetupService
                 continue;
             }
 
-            $content = rtrim($content, "\n") . "\n{$newLine}\n";
+            $content = rtrim($content, "\n")."\n{$newLine}\n";
         }
 
-        $content = rtrim($content, "\n") . "\n";
+        $content = rtrim($content, "\n")."\n";
 
         if ($content !== $originalContent) {
             if (File::put($envPath, $content) === false) {
@@ -92,7 +90,7 @@ class EnvironmentSetupService
             return $existing;
         }
 
-        $key = 'base64:' . base64_encode(Encrypter::generateKey((string) config('app.cipher', 'AES-256-CBC')));
+        $key = 'base64:'.base64_encode(Encrypter::generateKey((string) config('app.cipher', 'AES-256-CBC')));
         $this->setEnvValues(['APP_KEY' => $key]);
 
         config(['app.key' => $key]);
@@ -123,11 +121,11 @@ class EnvironmentSetupService
         $sqlitePath = database_path('database.sqlite');
         $databaseDir = dirname($sqlitePath);
 
-        if (!File::exists($databaseDir)) {
+        if (! File::exists($databaseDir)) {
             File::ensureDirectoryExists($databaseDir, 0755, true);
         }
 
-        if (!File::exists($sqlitePath)) {
+        if (! File::exists($sqlitePath)) {
             File::put($sqlitePath, '');
         }
 
@@ -158,8 +156,8 @@ class EnvironmentSetupService
         $filtered = [];
 
         foreach ($lines as $line) {
-            if (preg_match('/^' . preg_quote($key, '/') . '=/', $line) === 1) {
-                if (!$seen) {
+            if (preg_match('/^'.preg_quote($key, '/').'=/', $line) === 1) {
+                if (! $seen) {
                     $filtered[] = $line;
                     $seen = true;
                 }

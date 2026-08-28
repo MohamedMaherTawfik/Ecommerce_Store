@@ -4,9 +4,10 @@ namespace App\Http\Controllers\api\admin;
 
 use App\Http\Controllers\concerns\ApiResponse;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Services\EnvironmentSettings\EnvironmentSettingsService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ApplicationSettingController extends Controller
 {
@@ -14,8 +15,7 @@ class ApplicationSettingController extends Controller
 
     public function __construct(
         private readonly EnvironmentSettingsService $environmentSettings
-    ) {
-    }
+    ) {}
 
     public function show()
     {
@@ -26,7 +26,8 @@ class ApplicationSettingController extends Controller
             );
         } catch (\Throwable $exception) {
             Log::error('Failed to load environment settings', [
-                'error' => $exception->getMessage(),
+                'exception' => $exception::class,
+                'request_id' => (string) Str::uuid(),
             ]);
 
             return $this->error('Failed to load environment settings.');
@@ -42,7 +43,7 @@ class ApplicationSettingController extends Controller
         try {
             // Validate that we get an array of values
             $validated = $request->validate([
-                '*' => 'nullable'
+                '*' => 'nullable',
             ]);
 
             return $this->success(
@@ -51,7 +52,8 @@ class ApplicationSettingController extends Controller
             );
         } catch (\Throwable $exception) {
             Log::error('Failed to update environment settings', [
-                'error' => $exception->getMessage(),
+                'exception' => $exception::class,
+                'request_id' => (string) Str::uuid(),
             ]);
 
             return $this->error('Failed to update environment settings.');
@@ -62,7 +64,7 @@ class ApplicationSettingController extends Controller
     {
         try {
             $validated = $request->validate([
-                'recipient_email' => 'required|email'
+                'recipient_email' => 'required|email',
             ]);
 
             return $this->success(
@@ -71,11 +73,12 @@ class ApplicationSettingController extends Controller
             );
         } catch (\Throwable $exception) {
             Log::error('Failed to send settings test mail', [
-                'error' => $exception->getMessage(),
+                'exception' => $exception::class,
+                'request_id' => (string) Str::uuid(),
             ]);
 
             return $this->validationError([
-                'recipient_email' => [$exception->getMessage()],
+                'recipient_email' => ['Unable to send test email with the current configuration.'],
             ], 'Unable to send test email.');
         }
     }

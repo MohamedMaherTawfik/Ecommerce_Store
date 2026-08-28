@@ -31,12 +31,12 @@ class CartAndCheckoutApiTest extends TestCase
             'price' => 40,
         ]);
 
-        $this->withHeader('X-API-KEY', env('API_KEY'))->putJson("/api/v1/cart/items/{$item->id}", ['quantity' => 3])
+        $this->putJson("/api/v1/cart/items/{$item->id}", ['quantity' => 3])
             ->assertOk()
             ->assertJsonPath('data.items.0.quantity', 3)
             ->assertJsonPath('data.total', 120);
 
-        $this->withHeader('X-API-KEY', env('API_KEY'))->putJson("/api/v1/cart/items/{$item->id}", ['quantity' => 9])
+        $this->putJson("/api/v1/cart/items/{$item->id}", ['quantity' => 9])
             ->assertStatus(422);
     }
 
@@ -71,11 +71,12 @@ class CartAndCheckoutApiTest extends TestCase
             'price' => 110,
         ]);
 
-        $this->withHeader('X-API-KEY', env('API_KEY'))->postJson('/api/v1/pay', [
+        $this->postJson('/api/v1/pay', [
             'payment_method' => 'paymob',
             'payment_channel' => 'card',
             'phone' => '01000000000',
             'address' => '12 Market Street',
+            'idempotency_key' => 'cart-checkout-api-001',
             'city' => 'Cairo',
         ])
             ->assertOk()

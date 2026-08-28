@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\categoreyRequest;
 use App\Models\Categories;
 use App\Services\Media\OptimizedImageStorage;
-use Illuminate\Http\Request;
+use App\Support\TaggedCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -25,10 +25,10 @@ class CategoreyController extends Controller
         try {
             $page = request('page', 1);
 
-            $categories = \App\Support\TaggedCache::tags('categories')->remember(
+            $categories = TaggedCache::tags('categories')->remember(
                 "page_$page",
                 $this->cacheTime,
-                fn() => Categories::paginate(10)
+                fn () => Categories::paginate(10)
             );
 
             return $this->success($categories, 'All Categories');
@@ -43,10 +43,10 @@ class CategoreyController extends Controller
     public function all()
     {
         try {
-            $categories = \App\Support\TaggedCache::tags('categories')->remember(
+            $categories = TaggedCache::tags('categories')->remember(
                 'all',
                 $this->cacheTime,
-                fn() => Categories::all()
+                fn () => Categories::all()
             );
 
             return $this->success($categories, 'All Categories');
@@ -61,10 +61,10 @@ class CategoreyController extends Controller
     public function count()
     {
         try {
-            $count = \App\Support\TaggedCache::tags('categories')->remember(
+            $count = TaggedCache::tags('categories')->remember(
                 'count',
                 $this->cacheTime,
-                fn() => Categories::count()
+                fn () => Categories::count()
             );
 
             return $this->success($count, 'Categories Count');
@@ -79,13 +79,13 @@ class CategoreyController extends Controller
     public function show(int $id)
     {
         try {
-            $category = \App\Support\TaggedCache::tags('categories')->remember(
+            $category = TaggedCache::tags('categories')->remember(
                 "category_$id",
                 $this->cacheTime,
-                fn() => Categories::with('products')->find($id)
+                fn () => Categories::with('products')->find($id)
             );
 
-            if (!$category) {
+            if (! $category) {
                 return $this->notFound('Category Not Found');
             }
 
@@ -103,7 +103,7 @@ class CategoreyController extends Controller
         try {
             $category = Categories::find($id);
 
-            if (!$category) {
+            if (! $category) {
                 return $this->notFound('Category Not Found');
             }
 
@@ -135,13 +135,14 @@ class CategoreyController extends Controller
             $category = Categories::create($data);
 
             // clear cache
-            \App\Support\TaggedCache::tags('categories')->flush();
+            TaggedCache::tags('categories')->flush();
 
             DB::commit();
 
             return $this->success($category, 'Category Created Successfully');
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return $this->error($e);
         }
     }
@@ -156,7 +157,7 @@ class CategoreyController extends Controller
 
             $category = Categories::find($id);
 
-            if (!$category) {
+            if (! $category) {
                 return $this->notFound('Category Not Found');
             }
 
@@ -185,13 +186,14 @@ class CategoreyController extends Controller
             $category->update($data);
 
             // clear cache
-            \App\Support\TaggedCache::tags('categories')->flush();
+            TaggedCache::tags('categories')->flush();
 
             DB::commit();
 
             return $this->success($category, 'Category Updated Successfully');
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return $this->error($e);
         }
     }
@@ -206,7 +208,7 @@ class CategoreyController extends Controller
 
             $category = Categories::find($id);
 
-            if (!$category) {
+            if (! $category) {
                 return $this->notFound('Category Not Found');
             }
 
@@ -222,16 +224,18 @@ class CategoreyController extends Controller
             $category->delete();
 
             // clear cache
-            \App\Support\TaggedCache::tags('categories')->flush();
+            TaggedCache::tags('categories')->flush();
 
             DB::commit();
 
             return $this->success([], 'Category Deleted Successfully');
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return $this->error($e);
         }
     }
+
     // =========================
     // TRASHED
     // =========================
@@ -258,19 +262,20 @@ class CategoreyController extends Controller
 
             $category = Categories::onlyTrashed()->find($id);
 
-            if (!$category) {
+            if (! $category) {
                 return $this->notFound('Category Not Found');
             }
 
             $category->restore();
 
-            \App\Support\TaggedCache::tags('categories')->flush();
+            TaggedCache::tags('categories')->flush();
 
             DB::commit();
 
             return $this->success([], 'Category restored successfully');
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return $this->error($e);
         }
     }

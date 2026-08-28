@@ -5,17 +5,20 @@ namespace App\Imports;
 use App\Models\Categories;
 use App\Models\Products;
 use App\Models\Stock;
+use App\Support\SpreadsheetCellSanitizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\SkipsFailures;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithColumnLimit;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithLimit;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Row;
 
-class ProductsImport implements OnEachRow, SkipsOnFailure, WithChunkReading, WithHeadingRow, WithValidation
+class ProductsImport implements OnEachRow, SkipsOnFailure, WithChunkReading, WithColumnLimit, WithHeadingRow, WithLimit, WithValidation
 {
     use SkipsFailures;
 
@@ -32,6 +35,7 @@ class ProductsImport implements OnEachRow, SkipsOnFailure, WithChunkReading, Wit
     public function onRow(Row $row): void
     {
         $data = $row->toArray();
+        SpreadsheetCellSanitizer::rejectFormula($data, ['name', 'sku', 'category', 'description', 'status']);
         $sku = trim((string) $data['sku']);
         $normalizedSku = Str::lower($sku);
 
@@ -109,9 +113,18 @@ class ProductsImport implements OnEachRow, SkipsOnFailure, WithChunkReading, Wit
                 'row' => $failure->row(),
                 'attribute' => $failure->attribute(),
                 'errors' => $failure->errors(),
-                'values' => $failure->values(),
             ])->values()->all(),
         ];
+    }
+
+    public function limit(): int
+    {
+        return 5001;
+    }
+
+    public function endColumn(): string
+    {
+        return 'T';
     }
 
     private function categoryId(array $data): ?int

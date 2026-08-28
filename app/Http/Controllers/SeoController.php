@@ -6,9 +6,9 @@ use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\Categories;
 use App\Models\Products;
-use App\Services\Seo\SeoPageService;
 use App\Services\Home\HomePageService;
 use App\Services\Home\LayoutContentService;
+use App\Services\Seo\SeoPageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Schema;
@@ -20,8 +20,7 @@ class SeoController extends Controller
         SeoPageService $seo,
         HomePageService $homePage,
         LayoutContentService $layoutContent
-    )
-    {
+    ) {
         if (preg_match('#^(en|ar)/products/(\d+)$#', $request->path(), $matches)
             && Schema::hasTable('products')) {
             $product = Products::whereKey((int) $matches[2])

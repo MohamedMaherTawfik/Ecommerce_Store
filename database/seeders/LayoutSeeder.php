@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Footer;
 use App\Models\NavLink;
 use App\Models\SiteSetting;
-use App\Models\Footer;
+use Illuminate\Database\Seeder;
 
 class LayoutSeeder extends Seeder
 {
@@ -59,12 +59,12 @@ class LayoutSeeder extends Seeder
 
         // ─── Site Settings ────────────────────────
         $settings = [
-            'navbar_image'   => '/images/ai_logo.webp',
-            'footer_image'   => '/images/ai_logo.webp',
+            'navbar_image' => '/images/ai_logo.webp',
+            'footer_image' => '/images/ai_logo.webp',
             'register_image' => '/images/ai_logo.webp',
-            'copyright'      => '© 2025 Emmy Store — All rights reserved',
-            'google_play'    => '#',
-            'app_store'      => '#',
+            'copyright' => '© 2025 Emmy Store — All rights reserved',
+            'google_play' => '#',
+            'app_store' => '#',
         ];
 
         foreach ($settings as $key => $value) {
@@ -73,16 +73,16 @@ class LayoutSeeder extends Seeder
 
         // ─── Footer Social Links (uses existing footers table) ───
         Footer::updateOrCreate(['id' => 1], [
-            'facebook'  => '#',
-            'twitter'   => '#',
+            'facebook' => '#',
+            'twitter' => '#',
             'instagram' => '#',
-            'linkedin'  => null,
-            'youtube'   => null,
-            'whatsapp'  => null,
-            'phone'     => null,
-            'email'     => null,
+            'linkedin' => null,
+            'youtube' => null,
+            'whatsapp' => null,
+            'phone' => null,
+            'email' => null,
             'copyright' => '© 2025 Ataa Foundation — All rights reserved',
-            'logo'      => '/images/ai_logo.webp',
+            'logo' => '/images/ai_logo.webp',
         ]);
     }
 }

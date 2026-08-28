@@ -11,9 +11,13 @@ use Illuminate\Support\Str;
 class TaggedCache
 {
     private static bool $fallbackLogged = false;
+
     private static bool $diagnosticsLogged = false;
+
     private static bool $runtimeStoreChecked = false;
+
     private static ?bool $redisAvailable = null;
+
     private static ?string $initialDefaultDriver = null;
 
     /**
@@ -49,7 +53,7 @@ class TaggedCache
         self::$initialDefaultDriver ??= $driver;
         $repository = Cache::store();
 
-        if (!self::storeUsesRedis($driver)) {
+        if (! self::storeUsesRedis($driver)) {
             return;
         }
 
@@ -77,7 +81,7 @@ class TaggedCache
 
         self::$diagnosticsLogged = true;
 
-        if (!self::shouldLog('cache_diagnostics_v1', now()->addMinutes(30))) {
+        if (! self::shouldLog('cache_diagnostics_v1', now()->addMinutes(30))) {
             return;
         }
 
@@ -105,8 +109,7 @@ class TaggedCache
         Log::info('Cache diagnostics', [
             'configured_default_driver' => self::$initialDefaultDriver ?? $driver,
             'runtime_default_driver' => (string) config('cache.default'),
-            'env_cache_store' => env('CACHE_STORE'),
-            'env_cache_driver' => env('CACHE_DRIVER'),
+            'configured_cache_store' => config('cache.default'),
             'resolved_store_class' => $storeClass,
             'supports_tags' => $supportsTags,
             'redis_configured_for_store' => $redisConfiguredForStore,
@@ -114,7 +117,7 @@ class TaggedCache
             'redis_ping' => $redisPing,
             'redis_ping_ok' => $redisPing !== null && $redisError === null,
             'redis_error' => $redisError,
-            'unexpected_fallback_detected' => $redisConfiguredForStore && !($store instanceof RedisStore),
+            'unexpected_fallback_detected' => $redisConfiguredForStore && ! ($store instanceof RedisStore),
         ]);
     }
 
@@ -129,7 +132,7 @@ class TaggedCache
 
         self::$fallbackLogged = true;
 
-        if (!self::shouldLog('cache_tag_fallback_warning_v1', now()->addMinutes(30))) {
+        if (! self::shouldLog('cache_tag_fallback_warning_v1', now()->addMinutes(30))) {
             return;
         }
 
@@ -177,7 +180,7 @@ class TaggedCache
 
     private static function driverIsOperationalForTags(string $storeName): bool
     {
-        if (!self::storeUsesRedis($storeName)) {
+        if (! self::storeUsesRedis($storeName)) {
             return true;
         }
 
@@ -243,13 +246,8 @@ class TaggedCacheFallbackRepository
     public function __construct(
         private readonly array $tags,
         private readonly string $storeName
-    )
-    {
-    }
+    ) {}
 
-    /**
-     * @param  \DateInterval|\DateTimeInterface|int|null  $ttl
-     */
     public function remember(string $key, \DateInterval|\DateTimeInterface|int|null $ttl, \Closure $callback): mixed
     {
         return Cache::store($this->storeName)->remember($this->namespacedKey($key), $ttl, $callback);
@@ -289,6 +287,6 @@ class TaggedCacheFallbackRepository
 
     private function versionKey(string $tag): string
     {
-        return 'tagged_fallback_version:' . sha1($tag);
+        return 'tagged_fallback_version:'.sha1($tag);
     }
 }

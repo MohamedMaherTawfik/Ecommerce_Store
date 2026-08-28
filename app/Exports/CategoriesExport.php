@@ -3,15 +3,16 @@
 namespace App\Exports;
 
 use App\Models\Categories;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use App\Support\SpreadsheetCellSanitizer;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class CategoriesExport implements FromCollection, WithHeadings, WithMapping
+class CategoriesExport implements FromQuery, WithHeadings, WithMapping
 {
-    public function collection()
+    public function query()
     {
-        return Categories::all();
+        return Categories::query();
     }
 
     public function headings(): array
@@ -20,7 +21,7 @@ class CategoriesExport implements FromCollection, WithHeadings, WithMapping
             'ID',
             'Name',
             'Slug',
-            'Status'
+            'Status',
         ];
     }
 
@@ -28,8 +29,8 @@ class CategoriesExport implements FromCollection, WithHeadings, WithMapping
     {
         return [
             $category->id,
-            $category->name,
-            $category->slug,
+            SpreadsheetCellSanitizer::forExport($category->name),
+            SpreadsheetCellSanitizer::forExport($category->slug),
             $category->is_active ? 'Active' : 'Inactive',
         ];
     }

@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\api\home;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\concerns\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Http\Resources\Home\CategoryResource;
 use App\Models\Categories;
+use App\Support\TaggedCache;
 use Illuminate\Support\Facades\Log;
 
 class CategoryController extends Controller
@@ -15,7 +16,7 @@ class CategoryController extends Controller
     public function index()
     {
         try {
-            $categories = \App\Support\TaggedCache::tags(['categories'])->remember('home_categories_all', 3600, function () {
+            $categories = TaggedCache::tags(['categories'])->remember('home_categories_all', 3600, function () {
                 return Categories::query()
                     ->select([
                         'id',
@@ -39,6 +40,7 @@ class CategoryController extends Controller
             return $this->success($categories, 'Categories loaded');
         } catch (\Throwable $e) {
             Log::info($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -59,8 +61,6 @@ class CategoryController extends Controller
 
     public function clearCache()
     {
-        \App\Support\TaggedCache::tags(['categories'])->flush();
+        TaggedCache::tags(['categories'])->flush();
     }
 }
-
-

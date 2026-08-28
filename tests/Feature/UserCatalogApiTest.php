@@ -18,11 +18,11 @@ class UserCatalogApiTest extends TestCase
         Categories::factory()->create(['name' => 'Shirts']);
         brands::factory()->create(['name' => 'Urban Loom']);
 
-        $this->withHeader('X-API-KEY', env('API_KEY'))->getJson('/api/v1/categories')
+        $this->getJson('/api/v1/categories')
             ->assertOk()
             ->assertJsonPath('data.data.0.name', 'Shirts');
 
-        $this->withHeader('X-API-KEY', env('API_KEY'))->getJson('/api/v1/brands')
+        $this->getJson('/api/v1/brands')
             ->assertOk()
             ->assertJsonPath('data.data.0.name', 'Urban Loom');
     }
@@ -42,7 +42,7 @@ class UserCatalogApiTest extends TestCase
         Products::factory()->create(['price' => 120, 'is_active' => true]);
         Stock::create(['product_id' => $low->id, 'quantity' => 10]);
 
-        $this->withHeader('X-API-KEY', env('API_KEY'))->getJson("/api/v1/products?category_id={$category->id}&brand_id={$brand->id}&sort=price_asc")
+        $this->getJson("/api/v1/products?category_id={$category->id}&brand_id={$brand->id}&sort=price_asc")
             ->assertOk()
             ->assertJsonPath('data.0.name', 'Cotton Tee');
     }

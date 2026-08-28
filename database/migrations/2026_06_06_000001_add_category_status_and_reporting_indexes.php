@@ -37,10 +37,14 @@ return new class extends Migration
             $table->dropIndex('orders_status_created_idx');
         });
 
-        Schema::table('categories', function (Blueprint $table) {
-            if (Schema::hasColumn('categories', 'is_active')) {
+        if (Schema::hasColumn('categories', 'is_active')) {
+            Schema::table('categories', function (Blueprint $table) {
+                $table->dropIndex('categories_is_active_index');
+            });
+
+            Schema::table('categories', function (Blueprint $table) {
                 $table->dropColumn('is_active');
-            }
-        });
+            });
+        }
     }
 };

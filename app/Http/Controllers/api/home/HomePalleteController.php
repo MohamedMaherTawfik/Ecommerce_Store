@@ -6,7 +6,7 @@ use App\Http\Controllers\concerns\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ThemeRequest;
 use App\Models\WebsiteThemes;
-use Illuminate\Http\Request;
+use App\Support\TaggedCache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -17,12 +17,14 @@ class HomePalleteController extends Controller
     public function index()
     {
         try {
-            $themes = \App\Support\TaggedCache::tags(['themes'])->remember('home_themes_all', 3600, function () {
+            $themes = TaggedCache::tags(['themes'])->remember('home_themes_all', 3600, function () {
                 return WebsiteThemes::get();
             });
+
             return $this->success($themes, 'Themes loaded');
         } catch (\Throwable $e) {
             Log::info($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -33,6 +35,7 @@ class HomePalleteController extends Controller
             return $this->success($pallete, 'theme fetched successfully');
         } catch (\Throwable $e) {
             Log::info($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -42,10 +45,11 @@ class HomePalleteController extends Controller
         try {
             $data = $request->validated();
 
-            $data['slug'] = Str::slug($data['name']) . '-' . 'pallete';
+            $data['slug'] = Str::slug($data['name']).'-'.'pallete';
 
             $theme = WebsiteThemes::create($data);
             $this->clearCache();
+
             return $this->success($theme, 'Theme created successfully');
         } catch (\Throwable $e) {
             Log::error($e->getMessage());
@@ -58,12 +62,14 @@ class HomePalleteController extends Controller
     {
         try {
             $data = $request->validated();
-            $data['slug'] = Str::slug($data['name']) . '-' . 'palleteUpdated';
+            $data['slug'] = Str::slug($data['name']).'-'.'palleteUpdated';
             $pallete->update($data);
             $this->clearCache();
+
             return $this->success($pallete, 'Pallete updated Successfully');
         } catch (\Throwable $e) {
             Log::error($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -73,17 +79,17 @@ class HomePalleteController extends Controller
         try {
             $pallete->delete();
             $this->clearCache();
-            return $this->success($pallete,'theme trashed');
-        }
-        catch (\Throwable $e) {
+
+            return $this->success($pallete, 'theme trashed');
+        } catch (\Throwable $e) {
             Log::error($e->getMessage());
-            return $this->error('something went wrong',500);
+
+            return $this->error('something went wrong', 500);
         }
     }
 
     public function clearCache()
     {
-        \App\Support\TaggedCache::tags(['themes'])->flush();
+        TaggedCache::tags(['themes'])->flush();
     }
-
 }

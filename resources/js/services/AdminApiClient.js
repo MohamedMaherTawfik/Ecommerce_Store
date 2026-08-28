@@ -4,7 +4,6 @@ import "toastr/build/toastr.min.css";
 import {
     clearSession,
     getRedirectPath,
-    getToken,
     isPublicRequest,
     isRedirecting,
     markRedirecting,
@@ -24,20 +23,12 @@ const api = axios.create({
     headers: {
         Accept: "application/json",
         "X-Requested-With": "XMLHttpRequest",
-        "X-API-KEY": 'sk_test_7fK9mQ2xLp8VnR4cYw1DzA6bHt3JjN5uXe0GsP9k',
     },
 });
 
 api.interceptors.request.use(
     (config) => {
-        const token = getToken();
-
-        if (token) {
-            config.headers.set("Authorization", `Bearer ${token}`);
-        } else {
-            config.headers.delete("Authorization");
-        }
-
+        config.headers.delete("Authorization");
         return config;
     },
     (error) => Promise.reject(error),

@@ -45,6 +45,6 @@ class InvoiceService
         $prefix = config('checkout.invoice.prefix', 'INV');
         $next = (int) (Invoice::max('id') + config('checkout.invoice.next_number', 1));
 
-        return $prefix . '-' . now()->format('Y') . '-' . Str::padLeft((string) $next, 6, '0');
+        return $prefix.'-'.now()->format('Y').'-'.Str::padLeft((string) $next, 6, '0');
     }
 }

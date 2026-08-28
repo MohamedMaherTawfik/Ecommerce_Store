@@ -6,9 +6,47 @@ use App\Models\Orders;
 use App\Services\Home\OrderTimelineService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class OrderService
 {
+    private const TRANSITIONS = [
+        'status' => [
+            'pending' => ['approved', 'paid', 'failed', 'cancelled'],
+            'approved' => ['paid', 'cancelled'],
+            'paid' => ['shipped'],
+            'shipped' => ['delivered'],
+            'failed' => ['pending', 'cancelled'],
+            'delivered' => [],
+            'cancelled' => [],
+        ],
+        'order_status' => [
+            'pending' => ['confirmed', 'cancelled'],
+            'confirmed' => ['processing', 'cancelled'],
+            'processing' => ['completed', 'cancelled'],
+            'completed' => [],
+            'cancelled' => [],
+        ],
+        'payment_status' => [
+            'unpaid' => ['pending', 'paid', 'failed', 'cancelled'],
+            'pending' => ['paid', 'failed', 'cancelled'],
+            'failed' => ['pending', 'paid', 'cancelled'],
+            'paid' => ['partially_refunded', 'refunded'],
+            'partially_refunded' => ['refunded'],
+            'refunded' => [],
+            'cancelled' => [],
+        ],
+        'shipping_status' => [
+            'pending' => ['packed', 'cancelled'],
+            'packed' => ['shipped', 'cancelled'],
+            'shipped' => ['in_transit', 'delivered', 'returned'],
+            'in_transit' => ['delivered', 'returned'],
+            'delivered' => ['returned'],
+            'returned' => [],
+            'cancelled' => [],
+        ],
+    ];
+
     public function __construct(
         private readonly OrderTimelineService $timeline,
         private readonly AnalyticsService $analytics
@@ -40,8 +78,9 @@ class OrderService
         return DB::transaction(function () use ($id, $status, $note) {
             $order = Orders::whereKey($id)->lockForUpdate()->firstOrFail();
 
-            if (in_array($status, ['pending', 'paid', 'shipped', 'delivered', 'cancelled'], true)) {
+            if (in_array($status, ['pending', 'approved', 'paid', 'shipped', 'delivered', 'cancelled'], true)) {
                 $from = $order->status;
+                $this->assertTransition('status', $from, $status);
                 $order->update([
                     'status' => $status,
                     'delivered_at' => $status === 'delivered' ? now() : $order->delivered_at,
@@ -57,6 +96,7 @@ class OrderService
             }
 
             $from = $order->status;
+            $this->assertTransition('status', $from, $status);
             $payload = ['payment_status' => $status];
 
             if ($status === 'paid') {
@@ -84,7 +124,8 @@ class OrderService
     {
         return DB::transaction(function () use ($id, $column, $status, $note) {
             $order = Orders::whereKey($id)->lockForUpdate()->firstOrFail();
-            $from = $order->{$column};
+            $from = $order->{$column} ?: array_key_first(self::TRANSITIONS[$column] ?? []);
+            $this->assertTransition($column, $from, $status);
             $payload = [$column => $status];
 
             if ($column === 'order_status') {
@@ -122,5 +163,18 @@ class OrderService
     {
         $order = Orders::findOrFail($id);
         $order->delete();
+    }
+
+    private function assertTransition(string $column, string $from, string $to): void
+    {
+        if ($from === $to) {
+            return;
+        }
+
+        if (! in_array($to, self::TRANSITIONS[$column][$from] ?? [], true)) {
+            throw ValidationException::withMessages([
+                $column => "Invalid {$column} transition from {$from} to {$to}.",
+            ]);
+        }
     }
 }

@@ -42,7 +42,7 @@ class AdminAuditTest extends TestCase
 
         Sanctum::actingAs($user);
         $this->api()->getJson('/api/admin/products')
-            ->assertStatus(401);
+            ->assertForbidden();
 
         Sanctum::actingAs($admin);
         $this->api()->getJson('/api/admin/products')

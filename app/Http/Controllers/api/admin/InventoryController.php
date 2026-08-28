@@ -5,8 +5,8 @@ namespace App\Http\Controllers\api\admin;
 use App\Http\Controllers\concerns\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\InventoryStockRequest;
-use App\Models\ProductVariant;
 use App\Models\Products;
+use App\Models\ProductVariant;
 
 class InventoryController extends Controller
 {

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class TrustItem extends Model
 {
     protected $table = 'trust_items';
+
     protected $fillable = [
         'icon',
         'label',

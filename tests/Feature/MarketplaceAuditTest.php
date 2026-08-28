@@ -110,26 +110,23 @@ class MarketplaceAuditTest extends TestCase
             'password_confirmation' => $password,
         ])->assertOk();
 
-        $token = (string) $registration->json('data.token');
         $userId = (int) $registration->json('data.user.id');
-        $this->assertNotEmpty($token);
+        $registration->assertJsonMissingPath('data.token');
+        $this->assertTrue($registration->getCookie(config('auth_cookie.name'), false)->isHttpOnly());
 
         $login = $this->api()->postJson('/api/v1/users/login', [
             'email' => $email,
             'password' => $password,
         ])->assertOk();
-        $loginToken = (string) $login->json('data.token');
-        $this->assertNotEmpty($loginToken);
+        $login->assertJsonMissingPath('data.token');
+        $cookie = $login->getCookie(config('auth_cookie.name'), false);
+        $this->assertTrue($cookie->isHttpOnly());
 
-        $headers = [
-            'Authorization' => 'Bearer '.$loginToken,
-        ];
-
-        $this->api()->withHeaders($headers)->getJson('/api/v1/users/profile')
+        $this->api()->withCredentials()->withUnencryptedCookie(config('auth_cookie.name'), $cookie->getValue())->getJson('/api/v1/users/profile')
             ->assertOk()
             ->assertJsonPath('data.user.email', $email);
 
-        $this->api()->withHeaders($headers)->postJson('/api/v1/users/update-profile', [
+        $this->api()->withUnencryptedCookie(config('auth_cookie.name'), $cookie->getValue())->postJson('/api/v1/users/update-profile', [
             'name' => 'Buyer QA Updated',
             'email' => $email,
             'phone' => '01111111111',
@@ -137,38 +134,46 @@ class MarketplaceAuditTest extends TestCase
 
         $this->assertDatabaseHas('users', ['id' => $userId, 'phone' => '01111111111']);
 
-        $this->api()->withHeaders($headers)->postJson('/api/v1/users/password', [
+        $walletResponse = $this->api()->withUnencryptedCookie(config('auth_cookie.name'), $cookie->getValue())->getJson('/api/v1/users/wallet')
+            ->assertOk();
+        $this->assertNotNull($walletResponse->json('data.wallet'));
+        $this->assertDatabaseHas('wallets', ['user_id' => $userId]);
+
+        $walletResponseAgain = $this->api()->withUnencryptedCookie(config('auth_cookie.name'), $cookie->getValue())->getJson('/api/v1/users/wallet')
+            ->assertOk();
+        $this->assertNotNull($walletResponseAgain->json('data.wallet'));
+        $this->assertDatabaseCount('wallets', 1);
+
+        $this->api()->withUnencryptedCookie(config('auth_cookie.name'), $cookie->getValue())->postJson('/api/v1/users/logout')
+            ->assertOk();
+
+        $this->api()->withUnencryptedCookie(config('auth_cookie.name'), $cookie->getValue())->getJson('/api/v1/users/profile')
+            ->assertStatus(401);
+
+        $reLogin = $this->api()->postJson('/api/v1/users/login', [
+            'email' => $email,
+            'password' => $password,
+        ])->assertOk();
+        $reLoginCookie = $reLogin->getCookie(config('auth_cookie.name'), false);
+
+        $this->api()->withUnencryptedCookie(config('auth_cookie.name'), $reLoginCookie->getValue())->postJson('/api/v1/users/password', [
             'current_password' => $password,
             'new_password' => 'Q9!zL7@pR2',
             'confirm_password' => 'Q9!zL7@pR2',
         ])->assertOk();
 
-        $walletResponse = $this->api()->withHeaders($headers)->getJson('/api/v1/users/wallet')
-            ->assertOk();
-        $this->assertNotNull($walletResponse->json('data.wallet'));
-        $this->assertDatabaseHas('wallets', ['user_id' => $userId]);
-
-        $walletResponseAgain = $this->api()->withHeaders($headers)->getJson('/api/v1/users/wallet')
-            ->assertOk();
-        $this->assertNotNull($walletResponseAgain->json('data.wallet'));
-        $this->assertDatabaseCount('wallets', 1);
-
-        $this->api()->withHeaders($headers)->postJson('/api/v1/users/logout')
-            ->assertOk();
-
-        $this->api()->withHeaders($headers)->getJson('/api/v1/users/profile')
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+        $this->app['auth']->forgetGuards();
+        $this->api()->withUnencryptedCookie(config('auth_cookie.name'), $reLoginCookie->getValue())->getJson('/api/v1/users/profile')
             ->assertStatus(401);
 
-        $this->api()->withHeaders(['Authorization' => 'Bearer '.$token])->getJson('/api/v1/users/profile')
-            ->assertStatus(401);
-
-        $reLogin = $this->api()->postJson('/api/v1/users/login', [
+        $finalLogin = $this->api()->postJson('/api/v1/users/login', [
             'email' => $email,
             'password' => 'Q9!zL7@pR2',
         ])->assertOk();
-        $reLoginToken = (string) $reLogin->json('data.token');
+        $finalCookie = $finalLogin->getCookie(config('auth_cookie.name'), false);
 
-        $this->api()->withHeaders(['Authorization' => 'Bearer '.$reLoginToken])->deleteJson('/api/v1/users/delete-account')
+        $this->api()->withUnencryptedCookie(config('auth_cookie.name'), $finalCookie->getValue())->deleteJson('/api/v1/users/delete-account')
             ->assertOk();
 
     }
@@ -238,7 +243,9 @@ class MarketplaceAuditTest extends TestCase
             'google_id' => 'google-123',
         ]);
 
-        $this->assertStringContainsString('/auth/google-success?token=', (string) $response->headers->get('Location'));
+        $this->assertStringEndsWith('/auth/google-success', (string) $response->headers->get('Location'));
+        $this->assertStringNotContainsString('token=', (string) $response->headers->get('Location'));
+        $this->assertTrue($response->getCookie(config('auth_cookie.name'), false)->isHttpOnly());
     }
 
     public function test_cart_wishlist_and_review_flows_handle_common_edge_cases(): void
@@ -410,6 +417,7 @@ class MarketplaceAuditTest extends TestCase
             'payment_channel' => 'card',
             'phone' => '01000000000',
             'address' => '12 Market Street',
+            'idempotency_key' => 'marketplace-checkout-001',
             'city' => 'Cairo',
             'country' => 'Egypt',
         ])->assertOk();

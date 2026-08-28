@@ -17,8 +17,8 @@ class WishlistController extends Controller
     {
         $items = Wishlist::with(['product' => function ($query) {
             $query->with(['category', 'brand', 'stocks'])
-                  ->withAvg('reviews', 'rating')
-                  ->withCount('reviews');
+                ->withAvg('reviews', 'rating')
+                ->withCount('reviews');
         }])
             ->whereHas('product')
             ->where('user_id', $request->user()->id)

@@ -11,7 +11,10 @@ class ShippingRateController extends Controller
 {
     use ApiResponse;
 
-    public function index() { return $this->success(ShippingRate::with(['method', 'zone'])->latest()->paginate(20), 'Shipping rates loaded.'); }
+    public function index()
+    {
+        return $this->success(ShippingRate::with(['method', 'zone'])->latest()->paginate(20), 'Shipping rates loaded.');
+    }
 
     public function store(ShippingRateRequest $request)
     {

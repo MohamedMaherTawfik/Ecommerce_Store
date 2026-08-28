@@ -8,6 +8,7 @@ use App\Http\Requests\registerRequest;
 use App\Http\Resources\UserResource;
 use App\Repository\Register\AuthService;
 use App\Repository\Register\UserRepository;
+use App\Support\Auth\AuthTokenCookie;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -25,6 +26,7 @@ class RegisterController extends Controller
 
     public function sendOtp(Request $request)
     {
+        $request->merge(['email' => strtolower(trim((string) $request->input('email')))]);
         $request->validate([
             'email' => 'required|email|unique:users,email',
         ]);
@@ -36,6 +38,7 @@ class RegisterController extends Controller
 
     public function verifyOtp(Request $request)
     {
+        $request->merge(['email' => strtolower(trim((string) $request->input('email')))]);
         $request->validate([
             'email' => 'required|email',
             'otp' => 'required|digits:6',
@@ -57,6 +60,7 @@ class RegisterController extends Controller
 
             $user = DB::transaction(function () use ($request) {
                 $data = $request->validated();
+
                 return $this->userRepository->create([
                     'name' => $data['name'],
                     'email' => $data['email'],
@@ -78,12 +82,15 @@ class RegisterController extends Controller
 
             $this->authService->clearOtp($request->email);
 
-            $token = $user->createToken('rag-token')->plainTextToken;
+            $token = $user->createToken(
+                'browser-session',
+                ['*'],
+                now()->addMinutes((int) config('auth_cookie.minutes'))
+            )->plainTextToken;
 
             return $this->success([
-                'token' => $token,
                 'user' => new UserResource($user),
-            ], 'Registered successfully.');
+            ], 'Registered successfully.')->withCookie(AuthTokenCookie::make($token));
 
         } catch (Throwable $e) {
             Log::error('Register Error', [

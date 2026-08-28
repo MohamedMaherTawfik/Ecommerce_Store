@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 class ColorsController extends Controller
 {
     use ApiResponse;
+
     public function create(Request $request)
     {
         $data = $request->validate([
@@ -21,9 +22,11 @@ class ColorsController extends Controller
 
         try {
             $size = ProductColors::create($data);
+
             return $this->success($size);
         } catch (\Throwable $th) {
             Log::error($th);
+
             return $this->error('something went wrong');
         }
     }
@@ -38,13 +41,15 @@ class ColorsController extends Controller
 
         try {
             $size = ProductColors::find($id);
-            if (!$size) {
+            if (! $size) {
                 return $this->notFound('Color not found');
             }
             $size->update($data);
+
             return $this->success($size);
         } catch (\Throwable $th) {
             Log::error($th);
+
             return $this->error('something went wrong');
         }
     }
@@ -54,9 +59,11 @@ class ColorsController extends Controller
         try {
             $size = ProductColors::find($id);
             $size->delete();
+
             return $this->success($size);
         } catch (\Throwable $th) {
             Log::error($th);
+
             return $this->error('something went wrong');
         }
     }

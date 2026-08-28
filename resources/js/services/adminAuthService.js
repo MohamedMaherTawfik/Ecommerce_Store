@@ -3,7 +3,6 @@ import { getAdminHomePath } from "@/config/adminAccess";
 import {
     clearSession,
     getRole,
-    getToken,
     getUserData,
     setSession,
 } from "@/services/auth/authSession";
@@ -13,11 +12,10 @@ const adminAuthService = {
         const response = await api.post("/admin/login", credentials);
         const data = response.data;
         const authData = data?.data ?? {};
-        const token = authData?.token;
         const user = authData?.user;
 
-        if (token) {
-            setSession(token, user?.role ?? "admin", user ?? null);
+        if (user) {
+            setSession(user?.role ?? "admin", user);
         }
 
         return data;
@@ -29,7 +27,7 @@ const adminAuthService = {
     },
 
     isAuthenticated() {
-        return Boolean(getToken());
+        return Boolean(getRole());
     },
 
     getRole() {

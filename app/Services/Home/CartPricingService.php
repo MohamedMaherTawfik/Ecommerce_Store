@@ -13,7 +13,7 @@ class CartPricingService
     {
         $coupon = Coupon::where('code', strtoupper(trim($code)))->first();
 
-        if (!$coupon || !$coupon->isUsable()) {
+        if (! $coupon || ! $coupon->isUsable()) {
             throw ValidationException::withMessages([
                 'code' => ['Coupon is invalid, expired, or fully used.'],
             ]);
@@ -63,7 +63,7 @@ class CartPricingService
 
     private function itemTotal(CartItems $item): float
     {
-        if (!$item->product) {
+        if (! $item->product) {
             return 0;
         }
 

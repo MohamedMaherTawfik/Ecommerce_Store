@@ -6,10 +6,21 @@ use App\Models\Orders;
 use App\Models\Refund;
 use App\Models\ReturnRequest;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class ReturnService
 {
+    private const TRANSITIONS = [
+        'pending' => ['approved', 'rejected', 'cancelled'],
+        'approved' => ['received'],
+        'received' => ['processing'],
+        'processing' => ['refunded'],
+        'rejected' => [],
+        'cancelled' => [],
+        'refunded' => [],
+    ];
+
     public function __construct(private readonly InventoryService $inventory) {}
 
     public function create(int $userId, Orders $order, array $data): ReturnRequest
@@ -56,6 +67,21 @@ class ReturnService
     public function updateStatus(ReturnRequest $return, string $status, ?string $note = null): ReturnRequest
     {
         return DB::transaction(function () use ($return, $status, $note) {
+            $locked = ReturnRequest::with(['items', 'order'])
+                ->whereKey($return->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($locked->status === $status) {
+                return $locked;
+            }
+
+            if (! in_array($status, self::TRANSITIONS[$locked->status] ?? [], true)) {
+                throw ValidationException::withMessages([
+                    'status' => ["Return cannot transition from {$locked->status} to {$status}."],
+                ]);
+            }
+
             $payload = ['status' => $status, 'admin_note' => $note];
 
             if ($status === 'approved') {
@@ -67,36 +93,84 @@ class ReturnService
                 $payload['rejected_at'] = now();
             }
 
-            $return->update($payload);
-            $return->order->update(['refund_status' => $status === 'rejected' ? 'rejected' : 'processing']);
-
-            if (in_array($status, ['received', 'refunded'], true) && config('checkout.restore_stock_on_return')) {
-                $this->inventory->restore($return->items);
+            if ($status === 'received' && config('checkout.restore_stock_on_return') && ! $locked->stock_restored_at) {
+                $this->inventory->restore($locked->items);
+                $payload['stock_restored_at'] = now();
             }
 
-            return $return->fresh(['items.orderItem.product', 'order']);
+            $locked->update($payload);
+            $locked->order->update(['refund_status' => $status === 'rejected' ? 'rejected' : 'processing']);
+
+            Log::info('Return status changed', [
+                'return_request_id' => $locked->id,
+                'from_status' => $return->status,
+                'to_status' => $status,
+                'actor_id' => auth()->id(),
+            ]);
+
+            return $locked->fresh(['items.orderItem.product', 'order']);
         });
     }
 
     public function refund(ReturnRequest $return, array $data): Refund
     {
         return DB::transaction(function () use ($return, $data) {
-            $refund = Refund::create([
-                'order_id' => $return->order_id,
-                'payment_id' => $return->order->latestPayment?->id,
-                'return_request_id' => $return->id,
-                'user_id' => $return->user_id,
-                'amount' => $data['amount'] ?? $return->order->total,
-                'currency' => $return->order->currency ?? config('checkout.currency'),
+            $locked = ReturnRequest::with(['order.latestPayment'])
+                ->whereKey($return->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $idempotencyKey = hash('sha256', "return:{$locked->id}:paymob");
+            $existing = Refund::where('idempotency_key', $idempotencyKey)
+                ->orWhere('return_request_id', $locked->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing) {
+                return $existing;
+            }
+
+            if ($locked->status !== 'received') {
+                throw ValidationException::withMessages([
+                    'status' => ['Only a received return can be refunded.'],
+                ]);
+            }
+
+            if ($locked->order->payment_status !== 'paid') {
+                throw ValidationException::withMessages([
+                    'payment' => ['Only a paid order can be refunded.'],
+                ]);
+            }
+
+            $amount = (float) ($data['amount'] ?? $locked->order->total);
+            if ($amount <= 0 || $amount - (float) $locked->order->total > 0.009) {
+                throw ValidationException::withMessages([
+                    'amount' => ['Refund amount must be positive and cannot exceed the order total.'],
+                ]);
+            }
+
+            $refund = Refund::firstOrCreate(['idempotency_key' => $idempotencyKey], [
+                'order_id' => $locked->order_id,
+                'payment_id' => $locked->order->latestPayment?->id,
+                'return_request_id' => $locked->id,
+                'user_id' => $locked->user_id,
+                'amount' => $amount,
+                'currency' => $locked->order->currency ?? config('checkout.currency'),
                 'gateway' => 'paymob',
                 'status' => 'pending',
-                'reason' => $return->reason,
+                'reason' => $locked->reason,
                 'admin_note' => $data['admin_note'] ?? null,
                 'processed_by' => auth()->id(),
             ]);
 
-            $return->update(['status' => 'processing']);
-            $return->order->update(['refund_status' => 'processing']);
+            $locked->update(['status' => 'processing']);
+            $locked->order->update(['refund_status' => 'processing']);
+
+            Log::info('Refund operation recorded', [
+                'refund_id' => $refund->id,
+                'return_request_id' => $locked->id,
+                'order_id' => $locked->order_id,
+                'actor_id' => auth()->id(),
+            ]);
 
             return $refund;
         });

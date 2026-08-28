@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\api\admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\Feature;
 use App\Http\Controllers\concerns\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\FeatureRequest;
+use App\Models\Feature;
+use App\Support\TaggedCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -21,15 +22,16 @@ class FeatureController extends Controller
     public function index()
     {
         try {
-            $features = \App\Support\TaggedCache::tags(['features'])->remember(
+            $features = TaggedCache::tags(['features'])->remember(
                 'features_all',
                 $this->cacheTime,
-                fn() => Feature::orderBy('sort_order')->get()
+                fn () => Feature::orderBy('sort_order')->get()
             );
 
             return $this->success($features, 'Features retrieved successfully');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -40,19 +42,20 @@ class FeatureController extends Controller
     public function show($id)
     {
         try {
-            $feature = \App\Support\TaggedCache::tags(['features'])->remember(
+            $feature = TaggedCache::tags(['features'])->remember(
                 "feature_$id",
                 $this->cacheTime,
-                fn() => Feature::find($id)
+                fn () => Feature::find($id)
             );
 
-            if (!$feature) {
+            if (! $feature) {
                 return $this->notFound('Feature not found');
             }
 
             return $this->success($feature, 'Feature retrieved successfully');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -67,7 +70,7 @@ class FeatureController extends Controller
 
             $feature = Feature::create($request->validated());
 
-            \App\Support\TaggedCache::tags(['features'])->flush();
+            TaggedCache::tags(['features'])->flush();
 
             DB::commit();
 
@@ -75,6 +78,7 @@ class FeatureController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -89,13 +93,13 @@ class FeatureController extends Controller
 
             $feature = Feature::find($id);
 
-            if (!$feature) {
+            if (! $feature) {
                 return $this->notFound('Feature not found');
             }
 
             $feature->update($request->validated());
 
-            \App\Support\TaggedCache::tags(['features'])->flush();
+            TaggedCache::tags(['features'])->flush();
 
             DB::commit();
 
@@ -103,6 +107,7 @@ class FeatureController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -117,13 +122,13 @@ class FeatureController extends Controller
 
             $feature = Feature::find($id);
 
-            if (!$feature) {
+            if (! $feature) {
                 return $this->notFound('Feature not found');
             }
 
             $feature->delete();
 
-            \App\Support\TaggedCache::tags(['features'])->flush();
+            TaggedCache::tags(['features'])->flush();
 
             DB::commit();
 
@@ -131,9 +136,8 @@ class FeatureController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
 }
-
-

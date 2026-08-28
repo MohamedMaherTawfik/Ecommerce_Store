@@ -109,6 +109,9 @@
                                         <span>DB Password</span>
                                     </label>
                                     <input id="password" v-model="form.password" type="password" class="form-control admin-control" placeholder="Enter database password" />
+                                    <p v-if="passwordConfigured" class="admin-helper-text">
+                                        A password is configured. Leave blank to keep it unchanged.
+                                    </p>
                                 </div>
                             </template>
                         </div>
@@ -156,6 +159,7 @@ const loading = ref(false);
 const testing = ref(false);
 const submitting = ref(false);
 const connectionMessage = ref("");
+const passwordConfigured = ref(false);
 
 const form = ref({
     driver: "sqlite",
@@ -206,9 +210,11 @@ const fetchSettings = async () => {
             port: data.port || "",
             database: data.database || "",
             username: data.username || "",
-            password: data.password || "",
+            password: "",
             sqlite_path: data.sqlite_path || "database/database.sqlite",
         };
+
+        passwordConfigured.value = Boolean(data.password?.configured);
 
         applyDefaults();
     } catch (error) {

@@ -295,7 +295,7 @@ return new class extends Migration
 
     private function stringColumn(Blueprint $table, string $column, ?string $default = null): void
     {
-        if (!Schema::hasColumn($table->getTable(), $column)) {
+        if (! Schema::hasColumn($table->getTable(), $column)) {
             $definition = $table->string($column)->nullable();
             if ($default !== null) {
                 $definition->default($default);
@@ -305,14 +305,14 @@ return new class extends Migration
 
     private function textColumn(Blueprint $table, string $column): void
     {
-        if (!Schema::hasColumn($table->getTable(), $column)) {
+        if (! Schema::hasColumn($table->getTable(), $column)) {
             $table->text($column)->nullable();
         }
     }
 
     private function integerColumn(Blueprint $table, string $column, ?int $default = 0): void
     {
-        if (!Schema::hasColumn($table->getTable(), $column)) {
+        if (! Schema::hasColumn($table->getTable(), $column)) {
             $definition = $table->integer($column)->nullable();
             if ($default !== null) {
                 $definition->default($default);
@@ -322,14 +322,14 @@ return new class extends Migration
 
     private function booleanColumn(Blueprint $table, string $column, bool $default = false): void
     {
-        if (!Schema::hasColumn($table->getTable(), $column)) {
+        if (! Schema::hasColumn($table->getTable(), $column)) {
             $table->boolean($column)->default($default);
         }
     }
 
     private function decimalColumn(Blueprint $table, string $column, int $precision, int $scale, mixed $default = null): void
     {
-        if (!Schema::hasColumn($table->getTable(), $column)) {
+        if (! Schema::hasColumn($table->getTable(), $column)) {
             $definition = $table->decimal($column, $precision, $scale)->nullable();
             if ($default !== null) {
                 $definition->default($default);
@@ -339,14 +339,14 @@ return new class extends Migration
 
     private function jsonColumn(Blueprint $table, string $column): void
     {
-        if (!Schema::hasColumn($table->getTable(), $column)) {
+        if (! Schema::hasColumn($table->getTable(), $column)) {
             $table->json($column)->nullable();
         }
     }
 
     private function foreignColumn(Blueprint $table, string $column, string $foreignTable): void
     {
-        if (!Schema::hasColumn($table->getTable(), $column)) {
+        if (! Schema::hasColumn($table->getTable(), $column)) {
             $table->foreignId($column)->nullable()->constrained($foreignTable)->nullOnDelete();
         }
     }

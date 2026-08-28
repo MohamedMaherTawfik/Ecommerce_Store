@@ -10,6 +10,7 @@ use App\Support\Auth\AuthTokenCookie;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class AdminAuthController extends Controller
 {
@@ -17,39 +18,19 @@ class AdminAuthController extends Controller
 
     public function login(Request $request)
     {
+        $request->merge(['email' => Str::lower(trim((string) $request->input('email')))]);
+        $credentials = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+            'password' => ['required', 'string', 'max:255'],
+        ]);
+
         try {
+            $user = User::where('email', $credentials['email'])->first();
 
-            Log::info('Admin login request started', [
-                'email' => $request->email,
-            ]);
-
-            $user = User::where('email', $request->email)->first();
-
-            Log::info('User lookup result', [
-                'exists' => (bool) $user,
-                'user_id' => $user?->id,
-                'role' => $user?->role,
-            ]);
-
-            if (! $user) {
-
-                Log::warning('User not found', [
-                    'email' => $request->email,
-                ]);
-
-                return $this->unauthorized('Invalid credentials.');
-            }
-
-            $passwordMatched = Hash::check($request->password, $user->password);
-
-            Log::info('Password check result', [
-                'matched' => $passwordMatched,
-            ]);
-
-            if (! $passwordMatched) {
-
-                Log::warning('Password mismatch', [
-                    'email' => $request->email,
+            if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+                Log::warning('Admin login rejected', [
+                    'identity_hash' => hash('sha256', $credentials['email']),
+                    'ip' => $request->ip(),
                 ]);
 
                 return $this->unauthorized('Invalid credentials.');
@@ -62,7 +43,7 @@ class AdminAuthController extends Controller
                     'role' => $user->role,
                 ]);
 
-                return $this->unauthorized('You do not have dashboard access.');
+                return $this->unauthorized('Invalid credentials.');
             }
 
             if (! $user->is_active) {
@@ -73,7 +54,11 @@ class AdminAuthController extends Controller
                 'last_seen' => now(),
             ]);
 
-            $token = $user->createToken('rag-token')->plainTextToken;
+            $token = $user->createToken(
+                'browser-session',
+                ['*'],
+                now()->addMinutes((int) config('auth_cookie.minutes'))
+            )->plainTextToken;
 
             Log::info('Admin logged in successfully', [
                 'user_id' => $user->id,
@@ -81,16 +66,13 @@ class AdminAuthController extends Controller
 
             return $this->success([
                 'user' => new UserResource($user),
-                'token' => $token,
             ], 'Logged in successfully.')->withCookie(AuthTokenCookie::make($token));
 
         } catch (\Throwable $e) {
 
             Log::error('Admin login failed with exception', [
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-                'trace' => $e->getTraceAsString(),
+                'exception' => $e::class,
+                'request_id' => (string) Str::uuid(),
             ]);
 
             return $this->error(

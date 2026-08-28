@@ -20,6 +20,7 @@ class ApplicationSettingsUpdateRequest extends FormRequest
 
             if ($type === 'toggle') {
                 $payload[$field] = filter_var($this->input($field, false), FILTER_VALIDATE_BOOLEAN);
+
                 continue;
             }
 

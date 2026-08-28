@@ -25,7 +25,7 @@ class ProductSeeder extends Seeder
                 'price' => 24.99,
                 'tax' => 5,
                 'featured' => true,
-                'description' => 'Vitamin C serum that brightens and evens skin tone.'
+                'description' => 'Vitamin C serum that brightens and evens skin tone.',
             ],
 
             [
@@ -35,7 +35,7 @@ class ProductSeeder extends Seeder
                 'price' => 19.99,
                 'tax' => 5,
                 'featured' => true,
-                'description' => 'Deep hydration cream for dry and sensitive skin.'
+                'description' => 'Deep hydration cream for dry and sensitive skin.',
             ],
 
             [
@@ -45,7 +45,7 @@ class ProductSeeder extends Seeder
                 'price' => 15.99,
                 'tax' => 5,
                 'featured' => false,
-                'description' => 'Daily cleanser for oily and acne-prone skin.'
+                'description' => 'Daily cleanser for oily and acne-prone skin.',
             ],
 
             [
@@ -55,7 +55,7 @@ class ProductSeeder extends Seeder
                 'price' => 18.50,
                 'tax' => 8,
                 'featured' => true,
-                'description' => 'Long-lasting matte liquid foundation.'
+                'description' => 'Long-lasting matte liquid foundation.',
             ],
 
             [
@@ -65,7 +65,7 @@ class ProductSeeder extends Seeder
                 'price' => 14.25,
                 'tax' => 8,
                 'featured' => false,
-                'description' => 'Waterproof mascara with intense volume.'
+                'description' => 'Waterproof mascara with intense volume.',
             ],
 
             [
@@ -75,7 +75,7 @@ class ProductSeeder extends Seeder
                 'price' => 16.99,
                 'tax' => 8,
                 'featured' => true,
-                'description' => 'Smooth matte lipstick with rich pigments.'
+                'description' => 'Smooth matte lipstick with rich pigments.',
             ],
 
             [
@@ -85,7 +85,7 @@ class ProductSeeder extends Seeder
                 'price' => 11.99,
                 'tax' => 5,
                 'featured' => false,
-                'description' => 'Repair shampoo for damaged hair.'
+                'description' => 'Repair shampoo for damaged hair.',
             ],
 
             [
@@ -95,7 +95,7 @@ class ProductSeeder extends Seeder
                 'price' => 21.99,
                 'tax' => 5,
                 'featured' => true,
-                'description' => 'Hair mask enriched with keratin.'
+                'description' => 'Hair mask enriched with keratin.',
             ],
 
             [
@@ -105,7 +105,7 @@ class ProductSeeder extends Seeder
                 'price' => 13.99,
                 'tax' => 5,
                 'featured' => false,
-                'description' => 'Lightweight body lotion for everyday hydration.'
+                'description' => 'Lightweight body lotion for everyday hydration.',
             ],
 
             [
@@ -115,7 +115,7 @@ class ProductSeeder extends Seeder
                 'price' => 12.50,
                 'tax' => 5,
                 'featured' => true,
-                'description' => 'Gentle moisturizing body wash for soft skin.'
+                'description' => 'Gentle moisturizing body wash for soft skin.',
             ],
 
             [
@@ -125,7 +125,7 @@ class ProductSeeder extends Seeder
                 'price' => 39.99,
                 'tax' => 10,
                 'featured' => true,
-                'description' => 'Elegant floral perfume with long-lasting freshness.'
+                'description' => 'Elegant floral perfume with long-lasting freshness.',
             ],
 
             [
@@ -135,7 +135,7 @@ class ProductSeeder extends Seeder
                 'price' => 29.99,
                 'tax' => 10,
                 'featured' => false,
-                'description' => 'Refreshing aquatic fragrance for daily use.'
+                'description' => 'Refreshing aquatic fragrance for daily use.',
             ],
 
             [
@@ -145,7 +145,7 @@ class ProductSeeder extends Seeder
                 'price' => 22.99,
                 'tax' => 8,
                 'featured' => false,
-                'description' => 'Premium makeup brush set for flawless application.'
+                'description' => 'Premium makeup brush set for flawless application.',
             ],
 
             [
@@ -155,7 +155,7 @@ class ProductSeeder extends Seeder
                 'price' => 9.99,
                 'tax' => 8,
                 'featured' => true,
-                'description' => 'Soft blending sponge for liquid and cream makeup.'
+                'description' => 'Soft blending sponge for liquid and cream makeup.',
             ],
 
             [
@@ -165,7 +165,7 @@ class ProductSeeder extends Seeder
                 'price' => 27.99,
                 'tax' => 5,
                 'featured' => true,
-                'description' => 'Overnight nourishing cream that restores skin moisture.'
+                'description' => 'Overnight nourishing cream that restores skin moisture.',
             ],
 
         ];
@@ -186,9 +186,9 @@ class ProductSeeder extends Seeder
                     'brand_id' => $brand?->id,
                     'name' => $item['name'],
                     'slug' => Str::slug($item['name']),
-                    'image' => 'https://picsum.photos/seed/' . Str::slug($item['name']) . '/600/600',
+                    'image' => 'https://picsum.photos/seed/'.Str::slug($item['name']).'/600/600',
                     'description' => $item['description'],
-                    'sku' => 'SKU-' . strtoupper(Str::random(8)),
+                    'sku' => 'SKU-'.strtoupper(Str::random(8)),
                     'tax' => $item['tax'],
                     'price' => $item['price'],
                     'is_active' => true,
@@ -212,7 +212,7 @@ class ProductSeeder extends Seeder
 
                     [
                         'product_id' => $product->id,
-                        'image' => "https://picsum.photos/seed/" . Str::slug($item['name']) . "-{$i}/600/600",
+                        'image' => 'https://picsum.photos/seed/'.Str::slug($item['name'])."-{$i}/600/600",
                     ]
                 );
             }

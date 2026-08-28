@@ -18,7 +18,7 @@ class PlaceOrderRequest extends FormRequest
             'payment_method' => ['nullable', 'in:paymob'],
             'payment_channel' => ['required', 'in:card,apple_pay,mobile_wallet'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'idempotency_key' => ['nullable', 'string', 'max:255'],
+            'idempotency_key' => ['required', 'string', 'min:8', 'max:128', 'regex:/^[A-Za-z0-9][A-Za-z0-9._:-]+$/'],
         ];
     }
 }

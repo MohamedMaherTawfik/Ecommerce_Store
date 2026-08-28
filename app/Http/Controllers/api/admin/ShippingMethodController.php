@@ -11,8 +11,15 @@ class ShippingMethodController extends Controller
 {
     use ApiResponse;
 
-    public function index() { return $this->success(ShippingMethod::with('rates')->orderBy('name')->paginate(20), 'Shipping methods loaded.'); }
-    public function show(int $id) { return $this->success(ShippingMethod::with('rates')->findOrFail($id), 'Shipping method loaded.'); }
+    public function index()
+    {
+        return $this->success(ShippingMethod::with('rates')->orderBy('name')->paginate(20), 'Shipping methods loaded.');
+    }
+
+    public function show(int $id)
+    {
+        return $this->success(ShippingMethod::with('rates')->findOrFail($id), 'Shipping method loaded.');
+    }
 
     public function store(ShippingMethodRequest $request)
     {

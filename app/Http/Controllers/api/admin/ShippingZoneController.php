@@ -11,7 +11,10 @@ class ShippingZoneController extends Controller
 {
     use ApiResponse;
 
-    public function index() { return $this->success(ShippingZone::latest()->paginate(20), 'Shipping zones loaded.'); }
+    public function index()
+    {
+        return $this->success(ShippingZone::latest()->paginate(20), 'Shipping zones loaded.');
+    }
 
     public function store(ShippingZoneRequest $request)
     {

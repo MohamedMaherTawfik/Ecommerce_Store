@@ -21,8 +21,12 @@ class AdminMiddleware
     {
         $user = $request->user();
 
-        if (! $user || ! $user->canAccessAdmin()) {
+        if (! $user) {
             return $this->unauthorized();
+        }
+
+        if (! $user->canAccessAdmin()) {
+            return $this->forbidden('Administrative access is required.');
         }
 
         if (! $user->isSuperAdmin()) {

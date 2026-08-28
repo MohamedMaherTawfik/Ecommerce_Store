@@ -8,9 +8,7 @@ use Throwable;
 
 class ShippingRateService
 {
-    public function __construct(private readonly ShippingProviderManager $providers)
-    {
-    }
+    public function __construct(private readonly ShippingProviderManager $providers) {}
 
     public function rates(array $address, float $subtotal, string $currency): array
     {
@@ -49,7 +47,7 @@ class ShippingRateService
     {
         $matched = $method->rates->filter(function ($rate) use ($address, $subtotal) {
             $zone = $rate->zone;
-            $zoneMatches = !$zone
+            $zoneMatches = ! $zone
                 || (($zone->country === null || $zone->country === ($address['country'] ?? null))
                 && ($zone->state === null || $zone->state === ($address['state'] ?? null))
                 && ($zone->city === null || $zone->city === ($address['city'] ?? null)));

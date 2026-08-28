@@ -3,15 +3,16 @@
 namespace App\Exports;
 
 use App\Models\Orders;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use App\Support\SpreadsheetCellSanitizer;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class OrdersExport implements FromCollection, WithHeadings, WithMapping
+class OrdersExport implements FromQuery, WithHeadings, WithMapping
 {
-    public function collection()
+    public function query()
     {
-        return Orders::with('user')->get();
+        return Orders::query()->with('user');
     }
 
     public function headings(): array
@@ -31,8 +32,8 @@ class OrdersExport implements FromCollection, WithHeadings, WithMapping
     {
         return [
             $order->id,
-            $order->user ? $order->user->name : 'Guest',
-            $order->user ? $order->user->email : '',
+            SpreadsheetCellSanitizer::forExport($order->user?->name ?? 'Guest'),
+            SpreadsheetCellSanitizer::forExport($order->user?->email ?? ''),
             $order->total,
             $order->status,
             $order->payment_status,

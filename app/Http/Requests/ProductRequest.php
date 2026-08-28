@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class ProductRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -34,13 +35,14 @@ class ProductRequest extends FormRequest
             'is_active' => 'nullable|boolean',
             'is_featured' => 'nullable|boolean',
             'return_policy' => 'nullable|string',
+            'image' => 'nullable|image|extensions:jpg,jpeg,png,webp|mimes:jpg,jpeg,png,webp|dimensions:max_width=4096,max_height=4096|max:4096',
             'quantity' => 'required|integer',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string|max:500',
             'meta_keywords' => 'nullable|string|max:1000',
             'og_title' => 'nullable|string|max:255',
             'og_description' => 'nullable|string|max:500',
-            'og_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'og_image' => 'nullable|image|extensions:jpg,jpeg,png,webp|mimes:jpg,jpeg,png,webp|dimensions:max_width=4096,max_height=4096|max:4096',
             'canonical_url' => 'nullable|url|max:2048',
             'sku' => 'nullable|string|max:100',
             'tax' => 'nullable|numeric',
@@ -52,7 +54,7 @@ class ProductRequest extends FormRequest
             'colors.*' => 'string',
 
             'images' => 'nullable|array|max:5',
-            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
+            'images.*' => 'image|extensions:jpg,jpeg,png,webp|mimes:jpg,jpeg,png,webp|dimensions:max_width=4096,max_height=4096|max:2048',
         ];
     }
 

@@ -227,6 +227,23 @@ class PaymentGatewayIntegrationTest extends TestCase
         $this->assertSame('pending', $order->fresh()->payment_status);
     }
 
+    public function test_duplicate_signed_webhook_is_acknowledged_without_reprocessing(): void
+    {
+        $order = $this->order(75);
+        $this->pendingPayment($order, 'int_duplicate');
+        $object = $this->paymobObject($order, 7500, 889900, 'int_duplicate');
+
+        $this->postSignedWebhook($object)->assertOk();
+        $this->postSignedWebhook($object)
+            ->assertOk()
+            ->assertJsonPath('data.duplicate', true);
+
+        $this->assertSame('paid', $order->fresh()->payment_status);
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseHas('payment_webhook_logs', ['gateway' => 'paymob', 'status' => 'processed']);
+        $this->assertDatabaseHas('payment_webhook_logs', ['gateway' => 'paymob', 'status' => 'duplicate']);
+    }
+
     private function pendingPayment(Orders $order, string $intentionId): Payment
     {
         return Payment::create([

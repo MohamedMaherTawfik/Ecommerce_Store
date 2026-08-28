@@ -14,7 +14,7 @@ class AuthenticateWithAuthCookie
             $token = $request->cookie(config('auth_cookie.name'));
 
             if (is_string($token) && $token !== '') {
-                $request->headers->set('Authorization', 'Bearer ' . $token);
+                $request->headers->set('Authorization', 'Bearer '.$token);
             }
         }
 

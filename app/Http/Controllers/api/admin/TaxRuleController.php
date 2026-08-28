@@ -11,8 +11,15 @@ class TaxRuleController extends Controller
 {
     use ApiResponse;
 
-    public function index() { return $this->success(TaxRule::orderByDesc('priority')->paginate(20), 'Tax rules loaded.'); }
-    public function show(int $id) { return $this->success(TaxRule::findOrFail($id), 'Tax rule loaded.'); }
+    public function index()
+    {
+        return $this->success(TaxRule::orderByDesc('priority')->paginate(20), 'Tax rules loaded.');
+    }
+
+    public function show(int $id)
+    {
+        return $this->success(TaxRule::findOrFail($id), 'Tax rule loaded.');
+    }
 
     public function store(TaxRuleRequest $request)
     {

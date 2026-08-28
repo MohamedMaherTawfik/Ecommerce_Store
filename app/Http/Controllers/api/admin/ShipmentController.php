@@ -11,10 +11,24 @@ use App\Notifications\OrderDeliveredNotification;
 use App\Notifications\OrderShippedNotification;
 use App\Services\Shipping\ShippingProviderManager;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ShipmentController extends Controller
 {
     use ApiResponse;
+
+    private const TRANSITIONS = [
+        'pending' => ['processing', 'cancelled'],
+        'processing' => ['label_created', 'shipped', 'failed', 'cancelled'],
+        'label_created' => ['shipped', 'failed', 'cancelled'],
+        'shipped' => ['in_transit', 'delivered', 'returned'],
+        'in_transit' => ['delivered', 'returned'],
+        'failed' => ['processing', 'cancelled'],
+        'delivered' => ['returned'],
+        'returned' => [],
+        'cancelled' => [],
+    ];
 
     public function create(Request $request, int $order)
     {
@@ -60,18 +74,31 @@ class ShipmentController extends Controller
 
     public function updateStatus(ShipmentStatusRequest $request, int $order)
     {
-        $shipment = Orders::findOrFail($order)->shipment()->firstOrFail();
-        $shipment->update($request->validated() + [
-            'shipped_at' => $request->validated('shipment_status') === 'shipped' ? now() : $shipment->shipped_at,
-            'delivered_at' => $request->validated('shipment_status') === 'delivered' ? now() : $shipment->delivered_at,
-        ]);
-        $shipment->order->update(['shipping_status' => $shipment->shipment_status]);
+        [$shipment, $changed] = DB::transaction(function () use ($request, $order): array {
+            $shipment = Shipment::where('order_id', $order)->lockForUpdate()->firstOrFail();
+            $from = $shipment->shipment_status;
+            $to = $request->validated('shipment_status');
 
-        if ($shipment->shipment_status === 'shipped') {
+            if ($from !== $to && ! in_array($to, self::TRANSITIONS[$from] ?? [], true)) {
+                throw ValidationException::withMessages([
+                    'shipment_status' => "Invalid shipment status transition from {$from} to {$to}.",
+                ]);
+            }
+
+            $shipment->update($request->validated() + [
+                'shipped_at' => $to === 'shipped' ? ($shipment->shipped_at ?: now()) : $shipment->shipped_at,
+                'delivered_at' => $to === 'delivered' ? ($shipment->delivered_at ?: now()) : $shipment->delivered_at,
+            ]);
+            $shipment->order()->update(['shipping_status' => $shipment->shipment_status]);
+
+            return [$shipment->fresh('order.user'), $from !== $to];
+        });
+
+        if ($changed && $shipment->shipment_status === 'shipped') {
             $shipment->order->user?->notify(new OrderShippedNotification($shipment->order->fresh(['shipment'])));
         }
 
-        if ($shipment->shipment_status === 'delivered') {
+        if ($changed && $shipment->shipment_status === 'delivered') {
             $shipment->order->user?->notify(new OrderDeliveredNotification($shipment->order->fresh(['shipment'])));
         }
 

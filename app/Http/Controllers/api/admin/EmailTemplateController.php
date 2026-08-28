@@ -6,6 +6,7 @@ use App\Http\Controllers\concerns\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Mail\TemplateMail;
 use App\Models\EmailTemplate;
+use App\Security\HtmlSanitizer;
 use App\Services\Email\EmailTemplateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -15,7 +16,10 @@ class EmailTemplateController extends Controller
 {
     use ApiResponse;
 
-    public function __construct(private readonly EmailTemplateService $templates) {}
+    public function __construct(
+        private readonly EmailTemplateService $templates,
+        private readonly HtmlSanitizer $sanitizer
+    ) {}
 
     public function index()
     {
@@ -85,7 +89,7 @@ class EmailTemplateController extends Controller
 
     private function data(Request $request, ?EmailTemplate $template = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'key' => ['required', 'string', 'max:100', 'regex:/^[a-z0-9_]+$/', Rule::unique('email_templates', 'key')->ignore($template?->id)],
             'name' => ['required', 'string', 'max:255'],
             'subject' => ['required', 'string', 'max:255'],
@@ -95,5 +99,9 @@ class EmailTemplateController extends Controller
             'variables.*' => ['string', 'max:100'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
+
+        $data['html_body'] = $this->sanitizer->sanitize($data['html_body']);
+
+        return $data;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\ProductsFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,17 +10,17 @@ use Illuminate\Support\Str;
 
 class Products extends Model
 {
-    /** @use HasFactory<\Database\Factories\ProductsFactory> */
+    /** @use HasFactory<ProductsFactory> */
     use HasFactory, SoftDeletes;
 
     protected $table = 'products';
+
     protected $casts = [
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
         'manage_stock' => 'boolean',
         'allow_backorder' => 'boolean',
     ];
-
 
     protected $fillable = [
         'category_id',
@@ -89,7 +90,7 @@ class Products extends Model
         return $this->hasMany(ProductImages::class, 'product_id');
     }
 
-      public function firstImage()
+    public function firstImage()
     {
         return $this->hasOne(ProductImages::class, 'product_id');
     }

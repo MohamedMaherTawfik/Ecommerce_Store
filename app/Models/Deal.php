@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Deal extends Model
 {
     protected $table = 'deals';
+
     protected $fillable = [
         'name',
         'category',
@@ -22,12 +23,12 @@ class Deal extends Model
     ];
 
     protected $casts = [
-        'is_active'      => 'boolean',
-        'discount'       => 'integer',
-        'sale_price'     => 'decimal:2',
+        'is_active' => 'boolean',
+        'discount' => 'integer',
+        'sale_price' => 'decimal:2',
         'original_price' => 'decimal:2',
-        'sold_percent'   => 'integer',
-        'expires_at'     => 'datetime',
+        'sold_percent' => 'integer',
+        'expires_at' => 'datetime',
     ];
 
     public function scopeActive($query)
@@ -44,7 +45,7 @@ class Deal extends Model
     {
         return $query->where(function ($q) {
             $q->whereNull('expires_at')
-              ->orWhere('expires_at', '>', now());
+                ->orWhere('expires_at', '>', now());
         });
     }
 }

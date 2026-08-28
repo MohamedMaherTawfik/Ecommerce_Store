@@ -19,7 +19,7 @@ class PaymentMethodsSeeder extends Seeder
             [
                 'name' => 'Paymob Unified Checkout',
                 'provider' => 'paymob',
-                'is_active' => filter_var(env('PAYMOB_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+                'is_active' => (bool) config('payment.gateways.paymob.enabled', true),
                 'is_default' => true,
                 'mode' => app()->environment('production') ? 'live' : 'test',
                 'settings' => ['channels' => ['card', 'apple_pay', 'mobile_wallet']],

@@ -3,7 +3,7 @@
  * ──────────────────────────────────────────────────────────
  * A lightweight, dedicated Axios instance for the palette API.
  * Intentionally isolated from the main ApiClient so it:
- *  - Skips Auth / Bearer tokens (palette is a public endpoint)
+ *  - Uses the public read-only palette endpoint
  *  - Skips the installMode interceptor
  *  - Silently fails without triggering app-wide notifications
  */
@@ -20,7 +20,6 @@ const themeClient = axios.create({
     headers: {
         Accept: 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
-        'x-api-key': "sk_test_8d7f2a1b4c6e9f0a123456789abcdef"
     },
 });
 

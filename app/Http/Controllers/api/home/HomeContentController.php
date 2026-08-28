@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\api\home;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\concerns\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Services\Home\HomePageService;
+use App\Support\TaggedCache;
 use Illuminate\Support\Facades\Log;
 
 class HomeContentController extends Controller
@@ -20,12 +21,13 @@ class HomeContentController extends Controller
                 ->setSharedMaxAge(300);
         } catch (\Throwable $e) {
             Log::info($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
 
     public function clearCache()
     {
-        \App\Support\TaggedCache::tags(['home_content'])->flush();
+        TaggedCache::tags(['home_content'])->flush();
     }
 }

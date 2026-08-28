@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\brands;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
-use App\Models\brands;
 
 class brandsFactory extends Factory
 {
@@ -16,7 +16,7 @@ class brandsFactory extends Factory
 
         return [
             'name' => $name,
-            'slug' => Str::slug($name) . '-' . time(),
+            'slug' => Str::slug($name).'-'.time(),
             'image' => null,
         ];
     }

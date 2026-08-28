@@ -27,7 +27,7 @@ return new class extends Migration
     {
         $row = DB::selectOne("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'orders'");
 
-        if (!$row?->sql) {
+        if (! $row?->sql) {
             return;
         }
 

@@ -2,8 +2,8 @@
 
 namespace App\Services\Home;
 
-use App\Models\OrderStatusLog;
 use App\Models\Orders;
+use App\Models\OrderStatusLog;
 
 class OrderTimelineService
 {

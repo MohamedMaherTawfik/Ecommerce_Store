@@ -4,11 +4,12 @@ namespace Database\Factories;
 
 use App\Models\brands;
 use App\Models\Categories;
+use App\Models\Products;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Products>
+ * @extends Factory<Products>
  */
 class ProductsFactory extends Factory
 {
@@ -33,7 +34,6 @@ class ProductsFactory extends Factory
                 ? fake()->unique()->bothify('SKU-#####')
                 : null,
 
-
             'tax' => fake()->randomFloat(2, 0, 20),
             'is_active' => fake()->boolean(90),
 
@@ -47,7 +47,7 @@ class ProductsFactory extends Factory
                 '4 days',
                 '7 days',
                 '14 days',
-                'No return'
+                'No return',
             ]),
         ];
     }

@@ -3,7 +3,6 @@ import { notify } from "@/services/notifications";
 import {
     clearSession,
     getRedirectPath,
-    getToken,
     isPublicRequest,
     isRedirecting,
     markRedirecting,
@@ -13,8 +12,6 @@ import {
 const apiOrigin = (
     import.meta.env.VITE_API_URL || window.location.origin
 ).replace(/\/$/, "");
-const apiKey = 'sk_test_7fK9mQ2xLp8VnR4cYw1DzA6bHt3JjN5uXe0GsP9k'
-
 const api = axios.create({
     baseURL: `${apiOrigin}/api/v1`,
     withCredentials: true,
@@ -44,20 +41,7 @@ api.interceptors.request.use(
             return config;
         }
 
-        const token = getToken();
-
-        if (token) {
-            config.headers.set("Authorization", `Bearer ${token}`);
-        } else {
-            config.headers.delete("Authorization");
-        }
-
-        if (apiKey && config.meta?.sendApiKey === true) {
-            config.headers.set("X-API-KEY", apiKey);
-        } else {
-            config.headers.delete("X-API-KEY");
-        }
-
+        config.headers.delete("Authorization");
         return config;
     },
     (error) => Promise.reject(error),

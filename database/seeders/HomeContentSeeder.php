@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\TrustItem;
+use App\Models\Banner;
+use App\Models\Deal;
 use App\Models\Feature;
 use App\Models\Testimonial;
-use App\Models\Deal;
-use App\Models\Banner;
+use App\Models\TrustItem;
+use Illuminate\Database\Seeder;
 
 class HomeContentSeeder extends Seeder
 {
@@ -40,24 +40,24 @@ class HomeContentSeeder extends Seeder
         // ─── Testimonials ─────────────────────────
         $testimonials = [
             [
-                'name'       => 'Sarah M.',
-                'role'       => 'Verified Buyer',
-                'text'       => 'The quality is absolutely unreal. I ordered a jacket and it arrived next day, beautifully packaged. 10/10 would recommend.',
-                'rating'     => 5,
+                'name' => 'Sarah M.',
+                'role' => 'Verified Buyer',
+                'text' => 'The quality is absolutely unreal. I ordered a jacket and it arrived next day, beautifully packaged. 10/10 would recommend.',
+                'rating' => 5,
                 'sort_order' => 1,
             ],
             [
-                'name'       => 'James K.',
-                'role'       => 'Regular Customer',
-                'text'       => 'Finally an online store that gets both style and customer service right. My go-to for everything wardrobe-related.',
-                'rating'     => 5,
+                'name' => 'James K.',
+                'role' => 'Regular Customer',
+                'text' => 'Finally an online store that gets both style and customer service right. My go-to for everything wardrobe-related.',
+                'rating' => 5,
                 'sort_order' => 2,
             ],
             [
-                'name'       => 'Amira L.',
-                'role'       => 'Fashion Blogger',
-                'text'       => 'I\'ve featured this store three times on my blog. The curation is impeccable and new drops keep me coming back every week.',
-                'rating'     => 5,
+                'name' => 'Amira L.',
+                'role' => 'Fashion Blogger',
+                'text' => 'I\'ve featured this store three times on my blog. The curation is impeccable and new drops keep me coming back every week.',
+                'rating' => 5,
                 'sort_order' => 3,
             ],
         ];
@@ -82,8 +82,8 @@ class HomeContentSeeder extends Seeder
         Banner::updateOrCreate(
             ['type' => 'hero'],
             [
-                'eyebrow'    => 'Featured Drop',
-                'title'      => 'Refined pieces crafted for those who lead, not follow.',
+                'eyebrow' => 'Featured Drop',
+                'title' => 'Refined pieces crafted for those who lead, not follow.',
                 'sort_order' => 1,
             ]
         );
@@ -91,8 +91,8 @@ class HomeContentSeeder extends Seeder
         Banner::updateOrCreate(
             ['type' => 'promo'],
             [
-                'eyebrow'  => 'Limited Time',
-                'title'    => 'Upgrade Your Style Game',
+                'eyebrow' => 'Limited Time',
+                'title' => 'Upgrade Your Style Game',
                 'subtitle' => 'Up to 40% off on premium collections. Today only.',
                 'cta_text' => 'Claim Offer',
                 'cta_link' => '/{lang}/products',
@@ -103,8 +103,8 @@ class HomeContentSeeder extends Seeder
         Banner::updateOrCreate(
             ['type' => 'newsletter'],
             [
-                'eyebrow'  => 'Stay in the loop',
-                'title'    => 'Get Exclusive Drops & Offers First',
+                'eyebrow' => 'Stay in the loop',
+                'title' => 'Get Exclusive Drops & Offers First',
                 'subtitle' => 'Join 12,000+ style-forward subscribers. No spam, ever.',
                 'cta_text' => 'Subscribe',
                 'sort_order' => 1,

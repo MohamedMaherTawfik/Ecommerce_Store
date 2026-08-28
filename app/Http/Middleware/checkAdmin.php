@@ -11,10 +11,11 @@ use Symfony\Component\HttpFoundation\Response;
 class checkAdmin
 {
     use apiResponse;
+
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -27,6 +28,7 @@ class checkAdmin
         if ($user->role != 'admin') {
             return $this->sendError('Forbidden', 403);
         }
+
         return $next($request);
     }
 }

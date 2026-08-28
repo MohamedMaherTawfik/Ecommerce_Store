@@ -3,13 +3,14 @@
 namespace App\Services\Shipping;
 
 use App\Interfaces\ShippingProviderInterface;
+use EasyPost\EasyPostClient;
 use RuntimeException;
 
 class EasyPostShippingProvider implements ShippingProviderInterface
 {
     public function getRates(array $data): array
     {
-        if (!class_exists(\EasyPost\EasyPostClient::class)) {
+        if (! class_exists(EasyPostClient::class)) {
             throw new RuntimeException('EasyPost SDK is not installed. Require easypost/easypost-php to enable live EasyPost rates.');
         }
 
@@ -28,7 +29,7 @@ class EasyPostShippingProvider implements ShippingProviderInterface
 
     public function createShipment(array $data): array
     {
-        if (!class_exists(\EasyPost\EasyPostClient::class)) {
+        if (! class_exists(EasyPostClient::class)) {
             throw new RuntimeException('EasyPost SDK is not installed.');
         }
 
@@ -39,7 +40,7 @@ class EasyPostShippingProvider implements ShippingProviderInterface
 
     public function buyLabel(array $data): array
     {
-        if (!class_exists(\EasyPost\EasyPostClient::class)) {
+        if (! class_exists(EasyPostClient::class)) {
             throw new RuntimeException('EasyPost SDK is not installed.');
         }
 
@@ -57,7 +58,7 @@ class EasyPostShippingProvider implements ShippingProviderInterface
 
     public function track(string $trackingNumber): array
     {
-        if (!class_exists(\EasyPost\EasyPostClient::class)) {
+        if (! class_exists(EasyPostClient::class)) {
             throw new RuntimeException('EasyPost SDK is not installed.');
         }
 
@@ -74,7 +75,7 @@ class EasyPostShippingProvider implements ShippingProviderInterface
 
     public function verifyAddress(array $address): array
     {
-        if (!class_exists(\EasyPost\EasyPostClient::class)) {
+        if (! class_exists(EasyPostClient::class)) {
             throw new RuntimeException('EasyPost SDK is not installed.');
         }
 
@@ -83,9 +84,9 @@ class EasyPostShippingProvider implements ShippingProviderInterface
         return ['valid' => true, 'address' => $verified];
     }
 
-    private function client(): \EasyPost\EasyPostClient
+    private function client(): EasyPostClient
     {
-        return new \EasyPost\EasyPostClient(config('easypost.api_key'));
+        return new EasyPostClient(config('easypost.api_key'));
     }
 
     private function shipmentPayload(array $data): array

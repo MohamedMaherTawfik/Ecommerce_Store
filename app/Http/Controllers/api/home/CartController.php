@@ -7,20 +7,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Home\ApplyCouponRequest;
 use App\Http\Requests\Home\CartItemQuantityRequest;
 use App\Http\Resources\Home\CartResource;
-use App\Models\Cart;
 use App\Models\CartItems;
 use App\Models\Products;
 use App\Services\Home\CartPricingService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
     use ApiResponse;
 
-    public function __construct(private readonly CartPricingService $pricing)
-    {
-    }
+    public function __construct(private readonly CartPricingService $pricing) {}
 
     public function addToCart(Request $request, $id)
     {
@@ -52,7 +49,7 @@ class CartController extends Controller
             }
 
             $item->increment('quantity', $quantity);
-            $item->update(['price' => \Illuminate\Support\Facades\DB::raw("quantity * {$product->price}")]);
+            $item->update(['price' => DB::raw("quantity * {$product->price}")]);
         } else {
             CartItems::create([
                 'cart_id' => $cart->id,
@@ -63,12 +60,14 @@ class CartController extends Controller
                 'price' => $product->price * $quantity,
             ]);
         }
+
         return $this->success(new CartResource($cart->fresh(['items.product.stocks', 'items.product.category', 'items.product.brand', 'coupon'])), 'Added To Cart Successfully');
     }
 
     public function cart()
     {
         $cart = auth()->user()->cart()->with(['items.product.stocks', 'items.product.category', 'items.product.brand', 'coupon'])->firstOrCreate([]);
+
         return $this->success(new CartResource($cart), 'Cart');
     }
 
@@ -77,6 +76,7 @@ class CartController extends Controller
         $item = CartItems::whereHas('cart', fn ($query) => $query->where('user_id', auth()->id()))
             ->findOrFail($id);
         $item->delete();
+
         return $this->success($item, 'Deleted From Cart Successfully');
     }
 
@@ -107,6 +107,7 @@ class CartController extends Controller
     {
         $cart = auth()->user()->cart()->first();
         $cart?->items()->delete();
+
         return $this->success($cart, 'Cart Cleared Successfully');
     }
 

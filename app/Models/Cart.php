@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 class Cart extends Model
 {
     protected $table = 'carts';
+
     protected $fillable = [
         'user_id',
         'coupon_id',
         'discount',
     ];
-
 
     public function user()
     {
@@ -28,5 +28,4 @@ class Cart extends Model
     {
         return $this->belongsTo(Coupon::class);
     }
-
 }

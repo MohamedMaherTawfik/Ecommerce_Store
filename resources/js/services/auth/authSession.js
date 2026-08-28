@@ -1,10 +1,7 @@
 const STORAGE_KEYS = {
-    token: "auth_token",
     role: "user_role",
     userData: "user_data",
 };
-
-let runtimeToken = null;
 
 const AUTH_PATH_PREFIXES = [
     "/api/v1/users/profile",
@@ -112,28 +109,17 @@ const markRedirecting = () => {
 };
 
 const clearSession = () => {
-    runtimeToken = null;
-    removeStorage(STORAGE_KEYS.token);
     removeStorage(STORAGE_KEYS.role);
     removeStorage(STORAGE_KEYS.userData);
 };
 
 /**
- * Persist auth state to localStorage + runtime memory.
- * token: Sanctum plaintext token (null for cookie-only flows)
+ * Persist non-sensitive UI state. Authentication remains in an HttpOnly cookie.
  * role: "user" | "admin" | a custom dashboard role
  * userData: profile object or null
  */
-const setSession = (token, role, userData = null) => {
+const setSession = (role, userData = null) => {
     const normalizedRole = (role ?? "user").toString().toLowerCase().trim();
-
-    runtimeToken = token || null;
-
-    if (token) {
-        writeStorage(STORAGE_KEYS.token, token);
-    } else {
-        removeStorage(STORAGE_KEYS.token);
-    }
 
     writeStorage(STORAGE_KEYS.role, normalizedRole);
 
@@ -144,7 +130,6 @@ const setSession = (token, role, userData = null) => {
     return normalizedRole;
 };
 
-const getToken = () => runtimeToken ?? readStorage(STORAGE_KEYS.token);
 const getRole = () => readStorage(STORAGE_KEYS.role);
 const getUserData = () => {
     const raw = readStorage(STORAGE_KEYS.userData);
@@ -160,13 +145,12 @@ const getUserData = () => {
     }
 };
 
-const isAuthenticated = () => Boolean(getToken() || getRole());
+const isAuthenticated = () => Boolean(getRole());
 
 export {
     clearSession,
     getRedirectPath,
     getRole,
-    getToken,
     getUserData,
     isAuthenticated,
     isPublicRequest,

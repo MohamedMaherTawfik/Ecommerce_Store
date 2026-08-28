@@ -11,6 +11,7 @@ use App\Models\Products;
 use App\Models\ProductSizes;
 use App\Models\Stock;
 use App\Services\Media\OptimizedImageStorage;
+use App\Support\TaggedCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -29,15 +30,16 @@ class ProductController extends Controller
         try {
             $page = request('page', 1);
 
-            $products = \App\Support\TaggedCache::tags(['products'])->remember(
+            $products = TaggedCache::tags(['products'])->remember(
                 "page_$page",
                 $this->cacheTime,
-                fn() => Products::with('category:id,name', 'brand:id,name', 'stocks')->paginate(10)
+                fn () => Products::with('category:id,name', 'brand:id,name', 'stocks')->paginate(10)
             );
 
             return $this->success($products, 'All Products');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
@@ -48,15 +50,16 @@ class ProductController extends Controller
     public function count()
     {
         try {
-            $count = \App\Support\TaggedCache::tags(['products'])->remember(
+            $count = TaggedCache::tags(['products'])->remember(
                 'count',
                 $this->cacheTime,
-                fn() => Products::count()
+                fn () => Products::count()
             );
 
             return $this->success($count, 'Products Count');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
@@ -67,19 +70,20 @@ class ProductController extends Controller
     public function show(int $id)
     {
         try {
-            $product = \App\Support\TaggedCache::tags(['products'])->remember(
+            $product = TaggedCache::tags(['products'])->remember(
                 "product_$id",
                 $this->cacheTime,
-                fn() => Products::with('category', 'brand', 'colors', 'sizes', 'stocks', 'images')->find($id)
+                fn () => Products::with('category', 'brand', 'colors', 'sizes', 'stocks', 'images')->find($id)
             );
 
-            if (!$product) {
+            if (! $product) {
                 return $this->notFound('Product Not Found');
             }
 
             return $this->success($product, 'Product Details');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
@@ -113,41 +117,41 @@ class ProductController extends Controller
             // stock
             Stock::create([
                 'product_id' => $product->id,
-                'quantity' => $quantity
+                'quantity' => $quantity,
             ]);
 
             // sizes
-            if (!empty($sizes)) {
+            if (! empty($sizes)) {
                 ProductSizes::insert(
-                    collect($sizes)->map(fn($s) => [
+                    collect($sizes)->map(fn ($s) => [
                         'product_id' => $product->id,
                         'size' => $s,
                         'created_at' => now(),
-                        'updated_at' => now()
+                        'updated_at' => now(),
                     ])->toArray()
                 );
             }
 
             // colors
-            if (!empty($colors)) {
+            if (! empty($colors)) {
                 ProductColors::insert(
-                    collect($colors)->map(fn($c) => [
+                    collect($colors)->map(fn ($c) => [
                         'product_id' => $product->id,
                         'color' => $c,
                         'created_at' => now(),
-                        'updated_at' => now()
+                        'updated_at' => now(),
                     ])->toArray()
                 );
             }
 
             $galleryImages = [];
             if ($request->hasFile('images')) {
-                $galleryImages = collect($request->file('images'))->map(fn($img) => [
-                        'product_id' => $product->id,
-                        'image' => $imageStorage->store($img, 'products', 1600, 1600),
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ])->toArray();
+                $galleryImages = collect($request->file('images'))->map(fn ($img) => [
+                    'product_id' => $product->id,
+                    'image' => $imageStorage->store($img, 'products', 1600, 1600),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])->toArray();
 
                 ProductImages::insert($galleryImages);
             }
@@ -156,7 +160,7 @@ class ProductController extends Controller
                 $product->update(['image' => $galleryImages[0]['image']]);
             }
 
-            \App\Support\TaggedCache::tags(['products'])->flush();
+            TaggedCache::tags(['products'])->flush();
 
             DB::commit();
 
@@ -164,6 +168,7 @@ class ProductController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
@@ -178,7 +183,7 @@ class ProductController extends Controller
 
             $product = Products::find($id);
 
-            if (!$product) {
+            if (! $product) {
                 return $this->notFound('Product Not Found');
             }
 
@@ -217,26 +222,26 @@ class ProductController extends Controller
 
             // sizes
             ProductSizes::where('product_id', $product->id)->delete();
-            if (!empty($sizes)) {
+            if (! empty($sizes)) {
                 ProductSizes::insert(
-                    collect($sizes)->map(fn($s) => [
+                    collect($sizes)->map(fn ($s) => [
                         'product_id' => $product->id,
                         'size' => $s,
                         'created_at' => now(),
-                        'updated_at' => now()
+                        'updated_at' => now(),
                     ])->toArray()
                 );
             }
 
             // colors
             ProductColors::where('product_id', $product->id)->delete();
-            if (!empty($colors)) {
+            if (! empty($colors)) {
                 ProductColors::insert(
-                    collect($colors)->map(fn($c) => [
+                    collect($colors)->map(fn ($c) => [
                         'product_id' => $product->id,
                         'color' => $c,
                         'created_at' => now(),
-                        'updated_at' => now()
+                        'updated_at' => now(),
                     ])->toArray()
                 );
             }
@@ -254,12 +259,12 @@ class ProductController extends Controller
 
                 ProductImages::where('product_id', $product->id)->delete();
 
-                $galleryImages = collect($request->file('images'))->map(fn($img) => [
-                        'product_id' => $product->id,
-                        'image' => $imageStorage->store($img, 'products', 1600, 1600),
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ])->toArray();
+                $galleryImages = collect($request->file('images'))->map(fn ($img) => [
+                    'product_id' => $product->id,
+                    'image' => $imageStorage->store($img, 'products', 1600, 1600),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])->toArray();
 
                 ProductImages::insert($galleryImages);
             }
@@ -268,7 +273,7 @@ class ProductController extends Controller
                 $product->update(['image' => $galleryImages[0]['image']]);
             }
 
-            \App\Support\TaggedCache::tags(['products'])->flush();
+            TaggedCache::tags(['products'])->flush();
 
             DB::commit();
 
@@ -276,6 +281,7 @@ class ProductController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
@@ -290,7 +296,7 @@ class ProductController extends Controller
 
             $product = Products::find($id);
 
-            if (!$product) {
+            if (! $product) {
                 return $this->notFound('Product Not Found');
             }
 
@@ -318,7 +324,7 @@ class ProductController extends Controller
 
             $product->delete();
 
-            \App\Support\TaggedCache::tags(['products'])->flush();
+            TaggedCache::tags(['products'])->flush();
 
             DB::commit();
 
@@ -326,9 +332,11 @@ class ProductController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
+
     // =========================
     // TRASHED
     // =========================
@@ -342,6 +350,7 @@ class ProductController extends Controller
             return $this->success($products, 'Trashed Products');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }
@@ -356,13 +365,13 @@ class ProductController extends Controller
 
             $product = Products::onlyTrashed()->find($id);
 
-            if (!$product) {
+            if (! $product) {
                 return $this->notFound('Product Not Found');
             }
 
             $product->restore();
 
-            \App\Support\TaggedCache::tags(['products'])->flush();
+            TaggedCache::tags(['products'])->flush();
 
             DB::commit();
 
@@ -370,6 +379,7 @@ class ProductController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Something went wrong');
         }
     }

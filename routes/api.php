@@ -60,7 +60,6 @@ use App\Http\Controllers\api\payment\PaymentCallbackController;
 use App\Http\Controllers\api\payment\PaymentController;
 use App\Http\Controllers\api\webhook\PaymentWebhookController;
 use App\Http\Middleware\AdminMiddleware;
-use App\Http\Middleware\ApiKeyMiddleware;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('installer')->group(function () {
@@ -68,7 +67,7 @@ Route::prefix('installer')->group(function () {
     Route::get('/requirements', [InstallerController::class, 'requirements']);
     Route::post('/finish', [InstallerController::class, 'finish']);
     Route::post('/process', [InstallerController::class, 'process']);
-})->withoutMiddleware(ApiKeyMiddleware::class);
+});
 
 Route::prefix('v1')->group(function () {
 
@@ -87,8 +86,8 @@ Route::prefix('v1')->group(function () {
         Route::post('reset-password', [AuthController::class, 'resetPassword'])
             ->middleware(['throttle:5,1', 'guest']);
 
-        Route::get('google-login', [GoogleAuthController::class, 'googleLogin'])->withoutMiddleware(ApiKeyMiddleware::class);
-        Route::get('google-callback', [GoogleAuthController::class, 'googleCallback'])->withoutMiddleware(ApiKeyMiddleware::class);
+        Route::get('google-login', [GoogleAuthController::class, 'googleLogin']);
+        Route::get('google-callback', [GoogleAuthController::class, 'googleCallback']);
 
         Route::middleware(['auth:sanctum', 'throttle:15,1'])->group(function () {
             Route::get('wallet', [WalletController::class, 'wallet']);
@@ -112,7 +111,7 @@ Route::prefix('v1')->group(function () {
         }
     );
 
-    Route::withoutMiddleware(ApiKeyMiddleware::class)->group(function () {
+    Route::group([], function () {
         Route::prefix('products')->group(function () {
             Route::get('/', [HomeProductController::class, 'index']);
             Route::get('/latest-four', [HomeProductController::class, 'latestFour']);
@@ -183,21 +182,21 @@ Route::prefix('v1')->group(function () {
 
     Route::prefix('palletes')->group(function () {
         Route::get('/', [HomePalleteController::class, 'index']);
-        Route::post('/', [HomePalleteController::class, 'create']);
         Route::get('/{pallete}', [HomePalleteController::class, 'show']);
-        Route::post('/{pallete}', [HomePalleteController::class, 'update']);
+        Route::middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
+            Route::post('/', [HomePalleteController::class, 'create']);
+            Route::post('/{pallete}', [HomePalleteController::class, 'update']);
+        });
     });
 
     Route::match(['get', 'post'], '/payment/paymob/callback', [PaymentCallbackController::class, 'paymob'])
-        ->name('payment.paymob.callback')
-        ->withoutMiddleware(ApiKeyMiddleware::class);
+        ->name('payment.paymob.callback');
     Route::post('/webhooks/paymob', [PaymentWebhookController::class, 'paymob'])
-        ->name('webhook.paymob')
-        ->withoutMiddleware(ApiKeyMiddleware::class);
+        ->name('webhook.paymob');
 });
 
 Route::prefix('admin')->group(function () {
-    Route::post('/login', [AdminAuthController::class, 'login'])->withoutMiddleware(ApiKeyMiddleware::class);
+    Route::post('/login', [AdminAuthController::class, 'login'])->middleware('throttle:admin-login');
 
     Route::prefix('orders')->middleware(['auth:sanctum', AdminMiddleware::class])->group(function () {
         Route::get('/', [AdminOrderController::class, 'index'])->middleware('permission:orders.view');

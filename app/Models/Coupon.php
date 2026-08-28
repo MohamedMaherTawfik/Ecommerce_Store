@@ -25,7 +25,7 @@ class Coupon extends Model
 
     public function isUsable(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -34,5 +34,10 @@ class Coupon extends Model
         }
 
         return $this->usage_limit === null || $this->used_count < $this->usage_limit;
+    }
+
+    public function redemptions()
+    {
+        return $this->hasMany(CouponRedemption::class);
     }
 }

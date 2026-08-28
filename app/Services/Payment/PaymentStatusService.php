@@ -6,6 +6,7 @@ use App\Mail\PaymentFailMail;
 use App\Models\Orders;
 use App\Models\Payment;
 use App\Models\Refund;
+use App\Models\ReturnRequest;
 use App\Notifications\PaymentSuccessNotification;
 use App\Services\Admin\AnalyticsService;
 use App\Services\Checkout\InventoryService;
@@ -34,7 +35,7 @@ class PaymentStatusService
         return DB::transaction(function () use ($order, $gateway, $transactionId, $amount, $currency, $response, $references) {
             $locked = Orders::with(['items', 'user'])->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->payment_status === 'paid') {
+            if (in_array($locked->payment_status, ['paid', 'refunded', 'partially_refunded'], true)) {
                 return $locked;
             }
 
@@ -100,7 +101,7 @@ class PaymentStatusService
     {
         return DB::transaction(function () use ($order, $gateway, $response, $references) {
             $locked = Orders::with('user')->whereKey($order->id)->lockForUpdate()->firstOrFail();
-            if ($locked->payment_status === 'paid') {
+            if (in_array($locked->payment_status, ['paid', 'cancelled', 'refunded', 'partially_refunded'], true)) {
                 return $locked;
             }
 
@@ -152,6 +153,10 @@ class PaymentStatusService
         return DB::transaction(function () use ($order, $gateway, $response, $references) {
             $locked = Orders::whereKey($order->id)->lockForUpdate()->firstOrFail();
             $isGatewayVoid = filter_var(data_get($response, 'is_voided'), FILTER_VALIDATE_BOOLEAN);
+            if (in_array($locked->payment_status, ['refunded', 'partially_refunded'], true)) {
+                return $locked;
+            }
+
             if ($locked->payment_status === 'paid' && ! $isGatewayVoid) {
                 return $locked;
             }
@@ -194,6 +199,16 @@ class PaymentStatusService
             $locked = Orders::whereKey($order->id)->lockForUpdate()->firstOrFail();
             $expectedCurrency = strtoupper((string) ($locked->currency ?: config('checkout.currency')));
 
+            if ($locked->payment_status === 'refunded') {
+                return $locked;
+            }
+
+            if (! in_array($locked->payment_status, ['paid', 'partially_refunded'], true)) {
+                throw ValidationException::withMessages([
+                    'status' => ['Only a paid order can transition to refunded.'],
+                ]);
+            }
+
             if (strtoupper($currency) !== $expectedCurrency) {
                 throw ValidationException::withMessages(['currency' => ['Gateway refund currency does not match the order currency.']]);
             }
@@ -228,6 +243,12 @@ class PaymentStatusService
                 ]
             );
 
+            $returnIds = Refund::where('order_id', $locked->id)
+                ->where('gateway', 'paymob')
+                ->where('status', 'pending')
+                ->pluck('return_request_id')
+                ->filter();
+
             Refund::where('order_id', $locked->id)
                 ->where('gateway', 'paymob')
                 ->where('status', 'pending')
@@ -237,6 +258,12 @@ class PaymentStatusService
                     'gateway_response' => $response,
                     'processed_at' => now(),
                 ]);
+
+            if ($paymentStatus === 'refunded' && $returnIds->isNotEmpty()) {
+                ReturnRequest::whereIn('id', $returnIds)
+                    ->where('status', 'processing')
+                    ->update(['status' => 'refunded']);
+            }
 
             return $locked->fresh('latestPayment');
         });

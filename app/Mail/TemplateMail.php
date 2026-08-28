@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Queue\QueueRetryPolicy;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -9,7 +10,7 @@ use Illuminate\Queue\SerializesModels;
 
 class TemplateMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, QueueRetryPolicy, SerializesModels;
 
     public function __construct(
         private readonly string $mailSubject,

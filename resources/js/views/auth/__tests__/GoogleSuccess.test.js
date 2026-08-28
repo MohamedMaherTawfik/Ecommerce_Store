@@ -5,10 +5,7 @@ const { push, replace, apiGet, apiClient, routeQuery } = vi.hoisted(() => {
     const push = vi.fn();
     const replace = vi.fn();
     const apiGet = vi.fn();
-    const routeQuery = {
-        token: "oauth-token-123",
-        role: "admin",
-    };
+    const routeQuery = {};
     const apiClient = {
         defaults: { headers: { common: {} } },
         get: apiGet,
@@ -45,11 +42,10 @@ describe("GoogleSuccess", () => {
         replace.mockReset();
         apiGet.mockReset();
         apiClient.defaults.headers.common = {};
-        routeQuery.token = "oauth-token-123";
-        routeQuery.role = "admin";
+        delete routeQuery.message;
     });
 
-    it("stores Google OAuth params and redirects the user", async () => {
+    it("uses the HttpOnly cookie profile and redirects the user", async () => {
         apiGet.mockResolvedValue({
             data: {
                 data: {
@@ -61,15 +57,14 @@ describe("GoogleSuccess", () => {
         mount(GoogleSuccess);
         await flushPromises();
 
-        expect(localStorage.getItem("auth_token")).toBe("oauth-token-123");
+        expect(localStorage.getItem("auth_token")).toBeNull();
         expect(localStorage.getItem("user_role")).toBe("admin");
-        expect(apiClient.defaults.headers.common.Authorization).toBe("Bearer oauth-token-123");
+        expect(apiClient.defaults.headers.common.Authorization).toBeUndefined();
         expect(push).toHaveBeenCalledWith("/admin");
     });
 
-    it("redirects to login when token is missing", async () => {
-        delete routeQuery.token;
-        routeQuery.role = "user";
+    it("redirects to login when the cookie profile is unavailable", async () => {
+        apiGet.mockRejectedValue(new Error("Unauthenticated"));
 
         mount(GoogleSuccess);
         await flushPromises();

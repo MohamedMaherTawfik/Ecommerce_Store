@@ -2,11 +2,19 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
 class registerRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'email' => strtolower(trim((string) $this->input('email'))),
+        ]);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -18,7 +26,7 @@ class registerRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -38,9 +46,12 @@ class registerRequest extends FormRequest
             'image' => [
                 'nullable',
                 'image',
+                'extensions:jpg,jpeg,png,webp',
+                'mimes:jpg,jpeg,png,webp',
+                'dimensions:max_width=4096,max_height=4096',
                 'max:5120',
             ],
-            'phone'=> [
+            'phone' => [
                 'nullable',
                 'string',
                 'max:255',

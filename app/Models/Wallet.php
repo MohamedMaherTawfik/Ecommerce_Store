@@ -9,7 +9,8 @@ class Wallet extends Model
 {
     use SoftDeletes;
 
-    protected $table ='wallets';
+    protected $table = 'wallets';
+
     protected $fillable = [
         'user_id',
         'balance',
@@ -18,11 +19,11 @@ class Wallet extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class,'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function walletTransaction()
     {
-        return $this->hasMany(WalletTransaction::class,'wallet_id');
+        return $this->hasMany(WalletTransaction::class, 'wallet_id');
     }
 }

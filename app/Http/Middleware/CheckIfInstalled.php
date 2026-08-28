@@ -7,6 +7,7 @@ use App\Services\Installer\InstallationStateService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckIfInstalled
@@ -29,16 +30,16 @@ class CheckIfInstalled
     public function __construct(
         private readonly EnvironmentSetupService $environmentSetup,
         private readonly InstallationStateService $installationState
-    )
-    {
-    }
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
         try {
             $this->environmentSetup->ensureBootstrapState();
         } catch (\Throwable $e) {
+            $requestId = (string) Str::uuid();
             Log::error('Installer bootstrap failed', [
+                'request_id' => $requestId,
                 'path' => $request->path(),
                 'error' => $e->getMessage(),
             ]);
@@ -46,8 +47,8 @@ class CheckIfInstalled
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Application bootstrap failed. Please check .env file permissions.',
-                    'error' => $e->getMessage(),
+                    'message' => 'Application bootstrap failed. Review the server log using the request ID.',
+                    'request_id' => $requestId,
                 ], 500);
             }
 
@@ -58,7 +59,7 @@ class CheckIfInstalled
         $installed = self::isInstalled();
 
         if ($installed) {
-            if ($request->is('api/installer*') && !$request->is('api/installer/status')) {
+            if ($request->is('api/installer*') && ! $request->is('api/installer/status')) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Installer is disabled because the application is already installed.',
@@ -120,6 +121,6 @@ class CheckIfInstalled
     {
         $locale = trim((string) config('app.locale', 'en'));
 
-        return '/' . ($locale !== '' ? $locale : 'en') . '/';
+        return '/'.($locale !== '' ? $locale : 'en').'/';
     }
 }

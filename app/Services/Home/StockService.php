@@ -29,7 +29,7 @@ class StockService
             $quantity = (int) $item->quantity;
             $stock = Stock::where('product_id', $productId)->lockForUpdate()->first();
 
-            if (!$stock || $stock->quantity < $quantity) {
+            if (! $stock || $stock->quantity < $quantity) {
                 throw ValidationException::withMessages([
                     'stock' => ['One or more products are no longer available.'],
                 ]);

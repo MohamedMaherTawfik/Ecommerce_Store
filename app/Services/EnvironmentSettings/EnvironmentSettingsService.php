@@ -23,7 +23,7 @@ class EnvironmentSettingsService
         return [
             'permission' => config('environment_settings.permission'),
             'tabs' => $this->transformTabs($tabs),
-            'values' => $this->resolveCurrentValues($tabs),
+            'values' => $this->resolveCurrentValues($tabs, true),
             'meta' => [
                 'test_mail_recipient' => optional(auth()->user())->email,
             ],
@@ -46,7 +46,7 @@ class EnvironmentSettingsService
         return [
             'permission' => config('environment_settings.permission'),
             'tabs' => $this->transformTabs(config('environment_settings.tabs', [])),
-            'values' => $this->resolveValuesFromPayload($payload),
+            'values' => $this->redactValues($payload),
             'meta' => [
                 'test_mail_recipient' => optional(auth()->user())->email,
             ],
@@ -55,7 +55,7 @@ class EnvironmentSettingsService
 
     public function sendTestMail(string $recipientEmail): array
     {
-        $this->refreshRuntimeState($this->resolveCurrentValues(config('environment_settings.tabs', [])));
+        $this->refreshRuntimeState($this->resolveCurrentValues(config('environment_settings.tabs', []), false));
 
         app()->forgetInstance('mail.manager');
         app()->forgetInstance('mailer');
@@ -75,7 +75,7 @@ class EnvironmentSettingsService
         ];
     }
 
-    private function resolveCurrentValues(array $tabs): array
+    private function resolveCurrentValues(array $tabs, bool $redactSecrets): array
     {
         $values = [];
         $dbSettings = $this->repository->getAllGrouped();
@@ -91,17 +91,21 @@ class EnvironmentSettingsService
                     $resolved = $isEncrypted ? Crypt::decryptString($dbSetting->value) : $dbSetting->value;
                 } else {
                     $fallbackKey = $definition['fallback_to'] ?? null;
-                    $fallback = $fallbackKey ? $this->envEditor->get($fallbackKey, env($fallbackKey)) : env($key);
+                    $fallback = $fallbackKey ? $this->envEditor->get($fallbackKey) : null;
                     $resolved = $this->envEditor->get($key, $fallback);
 
                     if (($resolved === null || $resolved === '') && $fallbackKey) {
-                        $resolved = $this->envEditor->get($fallbackKey, env($fallbackKey, ''));
+                        $resolved = $this->envEditor->get($fallbackKey, '');
                     }
                 }
 
-                $values[$key] = $type === 'toggle'
-                    ? filter_var($resolved, FILTER_VALIDATE_BOOLEAN)
-                    : (string) ($resolved ?? '');
+                if ($isEncrypted && $redactSecrets) {
+                    $values[$key] = ['configured' => filled($resolved)];
+                } else {
+                    $values[$key] = $type === 'toggle'
+                        ? filter_var($resolved, FILTER_VALIDATE_BOOLEAN)
+                        : (string) ($resolved ?? '');
+                }
             }
         }
 
@@ -141,6 +145,7 @@ class EnvironmentSettingsService
     {
         $payload = [];
         $fields = $this->managedFields();
+        $current = $this->resolveCurrentValues(config('environment_settings.tabs', []), false);
 
         foreach ($fields as $key => $definition) {
             $type = $definition['type'] ?? 'text';
@@ -151,7 +156,10 @@ class EnvironmentSettingsService
                 continue;
             }
 
-            $payload[$key] = trim((string) ($validated[$key] ?? ''));
+            $incoming = trim((string) ($validated[$key] ?? ''));
+            $payload[$key] = $type === 'password' && $incoming === ''
+                ? (string) ($current[$key] ?? '')
+                : $incoming;
         }
 
         if (($payload['GOOGLE_REDIRECT_URL'] ?? '') === '') {
@@ -194,10 +202,16 @@ class EnvironmentSettingsService
         }
     }
 
-    private function resolveValuesFromPayload(array $payload): array
+    private function redactValues(array $payload): array
     {
         if (($payload['GOOGLE_REDIRECT_URL'] ?? '') === '') {
             $payload['GOOGLE_REDIRECT_URL'] = $payload['GOOGLE_REDIRECT_URI'] ?? '';
+        }
+
+        foreach ($this->managedFields() as $key => $definition) {
+            if (($definition['type'] ?? 'text') === 'password') {
+                $payload[$key] = ['configured' => filled($payload[$key] ?? null)];
+            }
         }
 
         return $payload;

@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\api\admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\Deal;
 use App\Http\Controllers\concerns\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DealRequest;
+use App\Models\Deal;
+use App\Support\TaggedCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -21,15 +22,16 @@ class DealController extends Controller
     public function index()
     {
         try {
-            $deals = \App\Support\TaggedCache::tags(['deals'])->remember(
+            $deals = TaggedCache::tags(['deals'])->remember(
                 'deals_all',
                 $this->cacheTime,
-                fn() => Deal::orderBy('sort_order')->get()
+                fn () => Deal::orderBy('sort_order')->get()
             );
 
             return $this->success($deals, 'Deals retrieved successfully');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -40,19 +42,20 @@ class DealController extends Controller
     public function show($id)
     {
         try {
-            $deal = \App\Support\TaggedCache::tags(['deals'])->remember(
+            $deal = TaggedCache::tags(['deals'])->remember(
                 "deal_$id",
                 $this->cacheTime,
-                fn() => Deal::find($id)
+                fn () => Deal::find($id)
             );
 
-            if (!$deal) {
+            if (! $deal) {
                 return $this->notFound('Deal not found');
             }
 
             return $this->success($deal, 'Deal retrieved successfully');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -67,7 +70,7 @@ class DealController extends Controller
 
             $deal = Deal::create($request->validated());
 
-            \App\Support\TaggedCache::tags(['deals'])->flush();
+            TaggedCache::tags(['deals'])->flush();
 
             DB::commit();
 
@@ -75,6 +78,7 @@ class DealController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -89,13 +93,13 @@ class DealController extends Controller
 
             $deal = Deal::find($id);
 
-            if (!$deal) {
+            if (! $deal) {
                 return $this->notFound('Deal not found');
             }
 
             $deal->update($request->validated());
 
-            \App\Support\TaggedCache::tags(['deals'])->flush();
+            TaggedCache::tags(['deals'])->flush();
 
             DB::commit();
 
@@ -103,6 +107,7 @@ class DealController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -117,13 +122,13 @@ class DealController extends Controller
 
             $deal = Deal::find($id);
 
-            if (!$deal) {
+            if (! $deal) {
                 return $this->notFound('Deal not found');
             }
 
             $deal->delete();
 
-            \App\Support\TaggedCache::tags(['deals'])->flush();
+            TaggedCache::tags(['deals'])->flush();
 
             DB::commit();
 
@@ -131,9 +136,8 @@ class DealController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
 }
-
-

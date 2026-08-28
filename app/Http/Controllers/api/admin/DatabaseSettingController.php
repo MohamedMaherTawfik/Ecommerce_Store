@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DatabaseSettingsRequest;
 use App\Services\Database\DatabaseSettingsService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class DatabaseSettingController extends Controller
 {
@@ -14,8 +15,7 @@ class DatabaseSettingController extends Controller
 
     public function __construct(
         private readonly DatabaseSettingsService $databaseSettings
-    ) {
-    }
+    ) {}
 
     public function show()
     {
@@ -41,8 +41,13 @@ class DatabaseSettingController extends Controller
 
             return $this->success($result, 'Database connection test passed.');
         } catch (\Throwable $e) {
+            Log::warning('Database connection test failed', [
+                'exception' => $e::class,
+                'request_id' => (string) Str::uuid(),
+            ]);
+
             return $this->validationError([
-                'connection' => [$e->getMessage()],
+                'connection' => ['Unable to connect with the supplied database settings.'],
             ], 'Database connection test failed.');
         }
     }
@@ -59,11 +64,12 @@ class DatabaseSettingController extends Controller
             return $this->success($result, 'Database settings updated successfully.');
         } catch (\Throwable $e) {
             Log::error('Database settings update failed', [
-                'error' => $e->getMessage(),
+                'exception' => $e::class,
+                'request_id' => (string) Str::uuid(),
             ]);
 
             return $this->validationError([
-                'connection' => [$e->getMessage()],
+                'connection' => ['Unable to save the supplied database settings.'],
             ], 'Unable to save database settings.');
         }
     }

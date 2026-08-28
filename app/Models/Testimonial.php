@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Testimonial extends Model
 {
     protected $table = 'testimonials';
+
     protected $fillable = [
         'name',
         'role',
@@ -19,7 +20,7 @@ class Testimonial extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'rating'    => 'integer',
+        'rating' => 'integer',
     ];
 
     public function scopeActive($query)

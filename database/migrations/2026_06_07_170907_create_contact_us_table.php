@@ -20,7 +20,7 @@ return new class extends Migration
             $table->longText('message');
             $table->timestamp('replied_at')->nullable();
             $table->timestamps();
-            
+
             $table->index('replied_at');
             $table->index('email');
         });

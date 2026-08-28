@@ -21,7 +21,7 @@ class CheckoutRequest extends FormRequest
             'city' => ['nullable', 'string', 'max:100'],
             'country' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'idempotency_key' => ['nullable', 'string', 'max:255'],
+            'idempotency_key' => ['required', 'string', 'min:8', 'max:128', 'regex:/^[A-Za-z0-9][A-Za-z0-9._:-]+$/'],
             'use_wallet' => ['nullable', 'boolean'],
             'wallet_amount' => ['nullable', 'numeric', 'min:0'],
         ];

@@ -1,19 +1,19 @@
 <?php
 
-use App\Http\Middleware\ApiKeyMiddleware;
 use App\Http\Middleware\AuthenticateWithAuthCookie;
 use App\Http\Middleware\CheckIfInstalled;
 use App\Http\Middleware\EnsureModulePermission;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,83 +23,58 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->redirectGuestsTo(
+            fn (Request $request): ?string => $request->is('api/*') ? null : route('login')
+        );
         $middleware->append(CheckIfInstalled::class);
         $middleware->api(prepend: [
-            ApiKeyMiddleware::class,
             AuthenticateWithAuthCookie::class,
         ]);
+        $middleware->append(SecurityHeaders::class);
         $middleware->alias([
             'permission' => EnsureModulePermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // $exceptions->render(function (\Throwable $e, Request $request) {
-        //     if (! $request->expectsJson() && ! $request->is('api/*')) {
-        //         return null;
-        //     }
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request, Throwable $exception): bool => $request->is('api/*') || $request->expectsJson()
+        );
 
-        //     $payload = [
-        //         'success' => false,
-        //         'message' => 'Server error.',
-        //         'data' => null,
-        //         'errors' => [],
-        //     ];
+        $exceptions->render(function (Throwable $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
 
-        //     if ($e instanceof ValidationException) {
-        //         return response()->json([
-        //             'success' => false,
-        //             'message' => 'Validation failed.',
-        //             'data' => null,
-        //             'errors' => $e->errors(),
-        //         ], 422);
-        //     }
+            if ($exception instanceof HttpResponseException) {
+                return $exception->getResponse();
+            }
 
-        //     if ($e instanceof HttpResponseException) {
-        //         return $e->getResponse();
-        //     }
+            $status = match (true) {
+                $exception instanceof ValidationException => 422,
+                $exception instanceof AuthenticationException => 401,
+                $exception instanceof AuthorizationException => 403,
+                $exception instanceof ModelNotFoundException => 404,
+                $exception instanceof HttpExceptionInterface => $exception->getStatusCode(),
+                default => 500,
+            };
 
-        //     if ($e instanceof AuthenticationException) {
-        //         return response()->json([
-        //             'success' => false,
-        //             'message' => 'Unauthenticated.',
-        //             'data' => null,
-        //             'errors' => [],
-        //         ], 401);
-        //     }
+            $message = match ($status) {
+                400 => 'Bad request.',
+                401 => 'Unauthenticated.',
+                403 => 'Forbidden.',
+                404 => 'Resource not found.',
+                405 => 'Method not allowed.',
+                409 => 'Conflict.',
+                422 => 'Validation failed.',
+                429 => 'Too many requests. Please try again later.',
+                default => 'Server error.',
+            };
 
-        //     if ($e instanceof AuthorizationException) {
-        //         return response()->json([
-        //             'success' => false,
-        //             'message' => $e->getMessage() !== '' ? $e->getMessage() : 'Forbidden.',
-        //             'data' => null,
-        //             'errors' => [],
-        //         ], 403);
-        //     }
-
-        //     if ($e instanceof ModelNotFoundException) {
-        //         $model = class_basename($e->getModel() ?: 'resource');
-
-        //         return response()->json([
-        //             'success' => false,
-        //             'message' => "{$model} not found.",
-        //             'data' => null,
-        //             'errors' => [],
-        //         ], 404);
-        //     }
-
-        //     if ($e instanceof QueryException) {
-        //         return response()->json([
-        //             'success' => false,
-        //             'message' => app()->isProduction() ? 'Database error.' : $e->getMessage(),
-        //             'data' => null,
-        //             'errors' => [],
-        //         ], 500);
-        //     }
-
-        //     if (config('app.debug')) {
-        //         $payload['message'] = $e->getMessage();
-        //     }
-
-        //     return response()->json($payload, 500);
-        // });
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+                'data' => null,
+                'errors' => $exception instanceof ValidationException ? $exception->errors() : [],
+            ], $status);
+        });
     })->create();

@@ -4,18 +4,17 @@ namespace App\Services\Database;
 
 use App\Models\DatabaseSetting;
 use App\Services\Installer\EnvironmentSetupService;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 
 class DatabaseSettingsService
 {
     public function __construct(
         private readonly EnvironmentSetupService $environmentSetup
-    ) {
-    }
+    ) {}
 
     public function defaultSqlitePath(): string
     {
@@ -24,18 +23,20 @@ class DatabaseSettingsService
 
     public function currentSettings(): array
     {
+        $driver = (string) config('database.default', 'sqlite');
+        $connection = (array) config("database.connections.{$driver}", []);
         $envSettings = $this->normalizeSettings([
-            'driver' => (string) config('database.default', env('DB_CONNECTION', 'sqlite')),
-            'host' => env('DB_HOST'),
-            'port' => env('DB_PORT'),
-            'database' => env('DB_DATABASE'),
-            'username' => env('DB_USERNAME'),
-            'password' => env('DB_PASSWORD'),
-            'sqlite_path' => env('DB_CONNECTION', 'sqlite') === 'sqlite' ? env('DB_DATABASE', $this->defaultSqlitePath()) : null,
+            'driver' => $driver,
+            'host' => $connection['host'] ?? null,
+            'port' => $connection['port'] ?? null,
+            'database' => $connection['database'] ?? null,
+            'username' => $connection['username'] ?? null,
+            'password' => $connection['password'] ?? null,
+            'sqlite_path' => $driver === 'sqlite' ? ($connection['database'] ?? $this->defaultSqlitePath()) : null,
         ]);
 
         try {
-            if (!Schema::hasTable('database_settings')) {
+            if (! Schema::hasTable('database_settings')) {
                 return $envSettings;
             }
 
@@ -84,15 +85,15 @@ class DatabaseSettingsService
         $sqlitePath = $this->normalizeSqlitePath($path ?: $this->defaultSqlitePath());
         $directory = dirname($sqlitePath);
 
-        if (!File::exists($directory)) {
+        if (! File::exists($directory)) {
             File::ensureDirectoryExists($directory, 0755, true);
         }
 
-        if (!File::exists($sqlitePath)) {
+        if (! File::exists($sqlitePath)) {
             File::put($sqlitePath, '');
         }
 
-        if (!File::isWritable($sqlitePath)) {
+        if (! File::isWritable($sqlitePath)) {
             throw new \RuntimeException("SQLite database file is not writable: {$sqlitePath}");
         }
 
@@ -101,6 +102,7 @@ class DatabaseSettingsService
 
     public function testConnection(array $settings): array
     {
+        $settings = $this->preservePasswordWhenBlank($settings);
         $normalized = $this->normalizeSettings($settings);
         $connectionName = 'database_settings_test';
         $config = $this->makeConnectionConfig($normalized);
@@ -135,6 +137,7 @@ class DatabaseSettingsService
 
     public function applySettings(array $settings): array
     {
+        $settings = $this->preservePasswordWhenBlank($settings);
         $normalized = $this->normalizeSettings($settings);
         $tested = $this->testConnection($normalized);
         $targetConnection = 'database_settings_target';
@@ -224,7 +227,7 @@ class DatabaseSettingsService
             'port' => $normalized['port'],
             'database' => $normalized['database'],
             'username' => $normalized['username'],
-            'password' => $normalized['password'],
+            'password' => ['configured' => filled($normalized['password'])],
             'sqlite_path' => $normalized['sqlite_path'],
         ];
     }
@@ -266,6 +269,18 @@ class DatabaseSettingsService
                 'engine' => null,
             ],
         };
+    }
+
+    private function preservePasswordWhenBlank(array $settings): array
+    {
+        if (filled($settings['password'] ?? null)) {
+            return $settings;
+        }
+
+        $current = $this->currentSettings();
+        $settings['password'] = $current['password'] ?? null;
+
+        return $settings;
     }
 
     private function makeEnvPayload(array $settings): array

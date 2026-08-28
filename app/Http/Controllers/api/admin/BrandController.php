@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\BrandRequest;
 use App\Models\brands;
 use App\Services\Media\OptimizedImageStorage;
-use Illuminate\Http\Request;
+use App\Support\TaggedCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -27,15 +27,16 @@ class BrandController extends Controller
         try {
             $page = request('page', 1);
 
-            $brands = \App\Support\TaggedCache::tags(['brands'])->remember(
+            $brands = TaggedCache::tags(['brands'])->remember(
                 "index_page_$page",
                 $this->cacheTime,
-                fn() => brands::latest()->paginate(6)
+                fn () => brands::latest()->paginate(6)
             );
 
             return $this->success($brands, 'All Brands');
         } catch (\Throwable $e) {
             Log::error($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -46,15 +47,16 @@ class BrandController extends Controller
     public function all()
     {
         try {
-            $brands = \App\Support\TaggedCache::tags(['brands'])->remember(
-                "all",
+            $brands = TaggedCache::tags(['brands'])->remember(
+                'all',
                 $this->cacheTime,
-                fn() => brands::all()
+                fn () => brands::all()
             );
 
             return $this->success($brands, 'All Brands');
         } catch (\Throwable $e) {
             Log::error($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -65,15 +67,16 @@ class BrandController extends Controller
     public function count()
     {
         try {
-            $count = \App\Support\TaggedCache::tags(['brands'])->remember(
-                "count",
+            $count = TaggedCache::tags(['brands'])->remember(
+                'count',
                 $this->cacheTime,
-                fn() => brands::count()
+                fn () => brands::count()
             );
 
             return $this->success($count, 'Brands Count');
         } catch (\Throwable $e) {
             Log::error($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -84,19 +87,20 @@ class BrandController extends Controller
     public function show(int $id)
     {
         try {
-            $brand = \App\Support\TaggedCache::tags(['brands'])->remember(
+            $brand = TaggedCache::tags(['brands'])->remember(
                 "brand_$id",
                 $this->cacheTime,
-                fn() => brands::find($id)
+                fn () => brands::find($id)
             );
 
-            if (!$brand) {
+            if (! $brand) {
                 return $this->notFound('Brand Not Found');
             }
 
             return $this->success($brand, 'Brand Details');
         } catch (\Throwable $e) {
             Log::error($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -109,13 +113,14 @@ class BrandController extends Controller
         try {
             $brand = brands::with('products')->find($id);
 
-            if (!$brand) {
+            if (! $brand) {
                 return $this->notFound('Brand Not Found');
             }
 
             return $this->success($brand->products, 'Brand Products');
         } catch (\Throwable $e) {
             Log::error($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -134,7 +139,7 @@ class BrandController extends Controller
                 $data['image'] = $imageStorage->store($request->file('image'), 'brands', 960, 960);
             }
 
-            $data['slug'] = $data['name'] . '-' . time();
+            $data['slug'] = $data['name'].'-'.time();
 
             $brand = brands::create($data);
 
@@ -146,6 +151,7 @@ class BrandController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -160,7 +166,7 @@ class BrandController extends Controller
 
             $brand = brands::find($id);
 
-            if (!$brand) {
+            if (! $brand) {
                 return $this->notFound('Brand Not Found');
             }
 
@@ -188,6 +194,7 @@ class BrandController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -202,7 +209,7 @@ class BrandController extends Controller
 
             $brand = brands::find($id);
 
-            if (!$brand) {
+            if (! $brand) {
                 return $this->notFound('Brand Not Found');
             }
 
@@ -221,6 +228,7 @@ class BrandController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -238,6 +246,7 @@ class BrandController extends Controller
             return $this->success($brands, 'Trashed Brands');
         } catch (\Throwable $e) {
             Log::error($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -252,7 +261,7 @@ class BrandController extends Controller
 
             $brand = brands::onlyTrashed()->find($id);
 
-            if (!$brand) {
+            if (! $brand) {
                 return $this->notFound('Brand Not Found');
             }
 
@@ -266,6 +275,7 @@ class BrandController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e->getMessage());
+
             return $this->error('something went wrong');
         }
     }
@@ -276,7 +286,7 @@ class BrandController extends Controller
     private function clearBrandCache($id = null)
     {
         try {
-            \App\Support\TaggedCache::tags(['brands'])->flush();
+            TaggedCache::tags(['brands'])->flush();
 
             if ($id) {
                 Cache::forget("brand_$id");

@@ -29,6 +29,9 @@
         <p v-if="help" class="admin-helper-text">
             {{ help }}
         </p>
+        <p v-if="configured" class="admin-helper-text">
+            A secret is configured. Leave this field blank to keep it unchanged.
+        </p>
     </div>
 </template>
 
@@ -47,6 +50,7 @@ defineProps({
     help: String,
     disabled: Boolean,
     fullWidth: Boolean,
+    configured: Boolean,
 });
 
 defineEmits(['update:modelValue']);

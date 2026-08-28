@@ -11,14 +11,14 @@ class EnvEditor
     {
         $envPath = base_path('.env');
 
-        if (!File::exists($envPath)) {
+        if (! File::exists($envPath)) {
             return $default;
         }
 
         $lines = preg_split('/\r\n|\r|\n/', File::get($envPath)) ?: [];
 
         foreach ($lines as $line) {
-            if (!str_starts_with(trim($line), "{$key}=")) {
+            if (! str_starts_with(trim($line), "{$key}=")) {
                 continue;
             }
 
@@ -37,7 +37,7 @@ class EnvEditor
     {
         $envPath = base_path('.env');
 
-        if (!File::exists($envPath)) {
+        if (! File::exists($envPath)) {
             File::put($envPath, '', true);
         }
 
@@ -60,16 +60,17 @@ class EnvEditor
 
             $candidateKey = trim($candidateKey);
 
-            if (!array_key_exists($candidateKey, $pairs)) {
+            if (! array_key_exists($candidateKey, $pairs)) {
                 continue;
             }
 
             if (in_array($candidateKey, $handled, true)) {
                 $lines[$index] = null;
+
                 continue;
             }
 
-            $lines[$index] = $candidateKey . '=' . $this->formatValue($pairs[$candidateKey]);
+            $lines[$index] = $candidateKey.'='.$this->formatValue($pairs[$candidateKey]);
             $handled[] = $candidateKey;
         }
 
@@ -78,10 +79,10 @@ class EnvEditor
                 continue;
             }
 
-            $lines[] = $key . '=' . $this->formatValue($value);
+            $lines[] = $key.'='.$this->formatValue($value);
         }
 
-        $updated = rtrim(implode(PHP_EOL, array_values(array_filter($lines, static fn ($line) => $line !== null)))) . PHP_EOL;
+        $updated = rtrim(implode(PHP_EOL, array_values(array_filter($lines, static fn ($line) => $line !== null)))).PHP_EOL;
 
         if (File::put($envPath, $updated, true) === false) {
             throw new RuntimeException("Unable to update environment file at {$envPath}");
@@ -115,7 +116,7 @@ class EnvEditor
         }
 
         if (preg_match('/[\s#="\'`$\\\\]/', $stringValue) === 1) {
-            return '"' . addcslashes($stringValue, "\\\"$") . '"';
+            return '"'.addcslashes($stringValue, '\\"$').'"';
         }
 
         return $stringValue;

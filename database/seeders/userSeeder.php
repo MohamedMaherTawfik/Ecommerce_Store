@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class userSeeder extends Seeder
@@ -19,7 +18,7 @@ class userSeeder extends Seeder
             'password' => bcrypt('password'),
             'role' => 'admin',
             'is_active' => true,
-            'is_verified' => true
+            'is_verified' => true,
         ]);
     }
 }

@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Api\Admin;
+namespace App\Http\Controllers\api\admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ReplyContactUsRequest;
+use App\Http\Requests\ContactUs\ReplyContactUsRequest;
 use App\Models\ContactUs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -15,8 +15,9 @@ class ContactUsController extends Controller
     {
         try {
             Log::info('ContactUs index request', [
-                'filters' => $request->all(),
                 'admin_id' => auth('sanctum')->id(),
+                'has_search' => $request->filled('search'),
+                'status' => $request->input('status'),
             ]);
 
             $query = ContactUs::query()->with('user');
@@ -74,7 +75,7 @@ class ContactUsController extends Controller
 
             $message = ContactUs::with([
                 'user',
-                'replies.admin'
+                'replies.admin',
             ])->findOrFail($id);
 
             return response()->json([
@@ -105,7 +106,7 @@ class ContactUsController extends Controller
             Log::info('ContactUs reply request', [
                 'contact_id' => $id,
                 'admin_id' => auth('sanctum')->id(),
-                'payload' => $request->validated(),
+                'has_message' => filled($request->validated('message')),
             ]);
 
             $message = ContactUs::findOrFail($id);
@@ -136,17 +137,12 @@ class ContactUsController extends Controller
             Log::error('ContactUs reply failed', [
                 'contact_id' => $id,
                 'admin_id' => auth('sanctum')->id(),
-                'request_data' => $request->all(),
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
+                'exception' => $e::class,
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to send reply.',
-                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }

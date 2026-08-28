@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class categoreyRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -34,8 +35,8 @@ class categoreyRequest extends FormRequest
             'og_title' => 'nullable|string|max:255',
             'og_description' => 'nullable|string|max:500',
             'canonical_url' => 'nullable|url|max:2048',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
-            'og_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+            'image' => 'nullable|image|extensions:jpg,jpeg,png,webp|mimes:jpeg,png,jpg,webp|dimensions:max_width=4096,max_height=4096|max:4096',
+            'og_image' => 'nullable|image|extensions:jpg,jpeg,png,webp|mimes:jpeg,png,jpg,webp|dimensions:max_width=4096,max_height=4096|max:4096',
         ];
     }
 

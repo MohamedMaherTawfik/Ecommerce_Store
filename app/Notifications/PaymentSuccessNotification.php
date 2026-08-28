@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Orders;
+use App\Queue\QueueRetryPolicy;
 use App\Services\Email\EmailTemplateService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Notifications\Notification;
 
 class PaymentSuccessNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, QueueRetryPolicy;
 
     public function __construct(private readonly Orders $order) {}
 

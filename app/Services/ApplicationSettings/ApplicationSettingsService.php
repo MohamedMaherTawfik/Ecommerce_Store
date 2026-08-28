@@ -80,11 +80,11 @@ class ApplicationSettingsService
         foreach ($tabs as $tab) {
             foreach (($tab['fields'] ?? []) as $key => $definition) {
                 $fallbackKey = $definition['fallback_to'] ?? null;
-                $fallback = $fallbackKey ? $this->envEditor->get($fallbackKey, env($fallbackKey)) : env($key);
+                $fallback = $fallbackKey ? $this->envEditor->get($fallbackKey) : null;
                 $resolved = $this->envEditor->get($key, $fallback);
 
                 if (($resolved === null || $resolved === '') && $fallbackKey) {
-                    $resolved = $this->envEditor->get($fallbackKey, env($fallbackKey, ''));
+                    $resolved = $this->envEditor->get($fallbackKey, '');
                 }
 
                 $type = $definition['type'] ?? 'text';

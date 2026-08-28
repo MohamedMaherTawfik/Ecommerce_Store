@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Schema;
 class InstallationStateService
 {
     private static bool $stateLogged = false;
+
     private ?array $runtimeState = null;
 
     public function isInstalled(): bool
@@ -95,7 +96,7 @@ class InstallationStateService
         self::$stateLogged = true;
         $state = $this->state();
 
-        if (!$this->shouldLogState($state['state'], $context)) {
+        if (! $this->shouldLogState($state['state'], $context)) {
             return;
         }
 
@@ -132,7 +133,7 @@ class InstallationStateService
     private function shouldLogState(string $state, string $context): bool
     {
         $store = config('cache.stores.file') !== null ? 'file' : 'array';
-        $key = 'installer_state_log:' . sha1($context . '|' . $state);
+        $key = 'installer_state_log:'.sha1($context.'|'.$state);
 
         try {
             return Cache::store($store)->add($key, now()->toIso8601String(), now()->addMinutes(15));

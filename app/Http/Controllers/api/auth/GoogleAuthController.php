@@ -12,8 +12,8 @@ class GoogleAuthController extends Controller
 {
     private function frontendBaseUrl(): string
     {
-        $frontend = env('FRONTEND_URL');
-        $appUrl = env('APP_URL', config('app.url'));
+        $frontend = config('app.frontend_url');
+        $appUrl = config('app.url');
 
         return rtrim((string) ($frontend ?: $appUrl), '/');
     }
@@ -37,8 +37,8 @@ class GoogleAuthController extends Controller
             if (! $email) {
                 return redirect()->away(
                     $this->frontendBaseUrl()
-                    . '/auth/google-error?message='
-                    . urlencode('Google account did not return an email address.')
+                    .'/auth/google-error?message='
+                    .urlencode('Google account did not return an email address.')
                 );
             }
 
@@ -59,27 +59,24 @@ class GoogleAuthController extends Controller
             if (! $user->is_active) {
                 return redirect()->away(
                     $this->frontendBaseUrl()
-                    . '/auth/google-error?message='
-                    . urlencode('This account is currently disabled.')
+                    .'/auth/google-error?message='
+                    .urlencode('This account is currently disabled.')
                 );
             }
 
-            // Issue a Sanctum token and pass it in the redirect URL.
-            // The SPA reads it from the query string, stores it, and strips the URL.
-            $token = $user->createToken('google-auth-token')->plainTextToken;
+            $token = $user->createToken(
+                'browser-session',
+                ['*'],
+                now()->addMinutes((int) config('auth_cookie.minutes'))
+            )->plainTextToken;
 
-            return redirect()->away(
-                $this->frontendBaseUrl()
-                . '/auth/google-success?token='
-                . urlencode($token)
-                . '&role='
-                . urlencode(Str::lower((string) $user->role))
-            );
+            return redirect()->away($this->frontendBaseUrl().'/auth/google-success')
+                ->withCookie(AuthTokenCookie::make($token));
         } catch (\Exception $e) {
             return redirect()->away(
                 $this->frontendBaseUrl()
-                . '/auth/google-error?message='
-                . urlencode($e->getMessage())
+                .'/auth/google-error?message='
+                .urlencode('Google login could not be completed.')
             );
         }
     }

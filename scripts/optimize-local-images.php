@@ -14,6 +14,7 @@ foreach ($jobs as [$sourcePath, $targetPath, $maxWidth, $maxHeight, $quality]) {
 
     if ($source === false) {
         fwrite(STDERR, "Unable to read {$sourcePath}\n");
+
         continue;
     }
 

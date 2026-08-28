@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class NavLink extends Model
 {
     protected $table = 'nav_links';
+
     protected $fillable = [
         'key',
         'route',

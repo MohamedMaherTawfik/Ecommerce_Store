@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\api\admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\SiteSetting;
 use App\Http\Controllers\concerns\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SiteSettingRequest;
+use App\Models\SiteSetting;
 use App\Services\Media\OptimizedImageStorage;
+use App\Support\TaggedCache;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -22,7 +24,7 @@ class SiteSettingController extends Controller
     public function index()
     {
         try {
-            $settings = \App\Support\TaggedCache::tags(['settings'])->remember(
+            $settings = TaggedCache::tags(['settings'])->remember(
                 'site_settings_all',
                 $this->cacheTime,
                 function () {
@@ -31,8 +33,12 @@ class SiteSettingController extends Controller
                     $result = [];
                     $imageKeys = ['navbar_image', 'footer_image', 'register_image', 'tab_icon', 'navbar_logo'];
                     foreach ($items as $item) {
+                        if ($this->isSensitiveKey($item->key)) {
+                            continue;
+                        }
+
                         $val = $item->value;
-                        if (in_array($item->key, $imageKeys) && is_string($val) && !str_starts_with($val, 'http')) {
+                        if (in_array($item->key, $imageKeys) && is_string($val) && ! str_starts_with($val, 'http')) {
                             $val = asset(ltrim($val, '/'));
                         } elseif (is_string($val) && (str_starts_with($val, 'storage/') || str_starts_with($val, '/storage/'))) {
                             $val = asset(ltrim($val, '/'));
@@ -47,6 +53,7 @@ class SiteSettingController extends Controller
             return $this->success($settings, 'Site settings retrieved successfully');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -57,13 +64,17 @@ class SiteSettingController extends Controller
     public function show($key)
     {
         try {
-            $setting = \App\Support\TaggedCache::tags(['settings'])->remember(
+            if ($this->isSensitiveKey((string) $key)) {
+                return $this->forbidden('Secret configuration is managed through the protected application settings API.');
+            }
+
+            $setting = TaggedCache::tags(['settings'])->remember(
                 "setting_$key",
                 $this->cacheTime,
-                fn() => SiteSetting::where('key', $key)->first()
+                fn () => SiteSetting::where('key', $key)->first()
             );
 
-            if (!$setting) {
+            if (! $setting) {
                 return $this->notFound('Site setting not found');
             }
 
@@ -74,8 +85,8 @@ class SiteSettingController extends Controller
 
             $val = $data['value'];
             $imageKeys = ['navbar_image', 'footer_image', 'register_image', 'tab_icon', 'navbar_logo'];
-            
-            if (in_array($key, $imageKeys) && is_string($val) && !str_starts_with($val, 'http')) {
+
+            if (in_array($key, $imageKeys) && is_string($val) && ! str_starts_with($val, 'http')) {
                 $data['value'] = asset(ltrim($val, '/'));
             } elseif (is_string($val) && (str_starts_with($val, 'storage/') || str_starts_with($val, '/storage/'))) {
                 $data['value'] = asset(ltrim($val, '/'));
@@ -84,6 +95,7 @@ class SiteSettingController extends Controller
             return $this->success($data, 'Site setting retrieved successfully');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -93,19 +105,21 @@ class SiteSettingController extends Controller
     // =========================
     public function store(SiteSettingRequest $request, OptimizedImageStorage $imageStorage)
     {
+        $data = $request->validated();
+        $this->rejectSensitiveKey((string) $data['key']);
+
         try {
             DB::beginTransaction();
 
-            $data = $request->validated();
             if ($request->hasFile('value')) {
                 $file = $request->file('value');
                 $path = $imageStorage->store($file, 'settings', 1200, 1200);
-                $data['value'] = '/storage/' . $path;
+                $data['value'] = '/storage/'.$path;
             }
 
             $setting = SiteSetting::create($data);
 
-            \App\Support\TaggedCache::tags(['settings'])->flush();
+            TaggedCache::tags(['settings'])->flush();
 
             DB::commit();
 
@@ -113,6 +127,7 @@ class SiteSettingController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -122,6 +137,8 @@ class SiteSettingController extends Controller
     // =========================
     public function update(SiteSettingRequest $request, $key, OptimizedImageStorage $imageStorage)
     {
+        $this->rejectSensitiveKey((string) $key);
+
         try {
             DB::beginTransaction();
 
@@ -130,7 +147,7 @@ class SiteSettingController extends Controller
             if ($request->hasFile('value')) {
                 $file = $request->file('value');
                 $path = $imageStorage->store($file, 'settings', 1200, 1200);
-                $setting->value = '/storage/' . $path;
+                $setting->value = '/storage/'.$path;
             } else {
                 $value = $request->validated()['value'];
                 $baseUrl = rtrim(asset(''), '/');
@@ -141,7 +158,7 @@ class SiteSettingController extends Controller
             }
             $setting->save();
 
-            \App\Support\TaggedCache::tags(['settings'])->flush();
+            TaggedCache::tags(['settings'])->flush();
 
             DB::commit();
 
@@ -149,6 +166,7 @@ class SiteSettingController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -163,13 +181,13 @@ class SiteSettingController extends Controller
 
             $setting = SiteSetting::where('key', $key)->first();
 
-            if (!$setting) {
+            if (! $setting) {
                 return $this->notFound('Site setting not found');
             }
 
             $setting->delete();
 
-            \App\Support\TaggedCache::tags(['settings'])->flush();
+            TaggedCache::tags(['settings'])->flush();
 
             DB::commit();
 
@@ -177,6 +195,7 @@ class SiteSettingController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -184,8 +203,14 @@ class SiteSettingController extends Controller
     // =========================
     // BATCH UPDATE
     // =========================
-    public function batchUpdate(\Illuminate\Http\Request $request, OptimizedImageStorage $imageStorage)
+    public function batchUpdate(Request $request, OptimizedImageStorage $imageStorage)
     {
+        foreach (array_keys($request->all()) as $key) {
+            if (! in_array($key, ['_token', '_method'], true)) {
+                $this->rejectSensitiveKey((string) $key);
+            }
+        }
+
         try {
             DB::beginTransaction();
 
@@ -196,11 +221,11 @@ class SiteSettingController extends Controller
 
                 if ($request->hasFile($key)) {
                     $request->validate([
-                        $key => ['image', 'mimes:jpg,jpeg,png,webp,ico', 'max:2048'],
+                        $key => ['image', 'extensions:jpg,jpeg,png,webp,ico', 'mimes:jpg,jpeg,png,webp,ico', 'dimensions:max_width=4096,max_height=4096', 'max:2048'],
                     ]);
                     $file = $request->file($key);
                     $path = $imageStorage->store($file, 'settings', 1200, 1200);
-                    $value = '/storage/' . $path;
+                    $value = '/storage/'.$path;
                 }
 
                 if ($value !== null && ! is_array($value)) {
@@ -212,7 +237,7 @@ class SiteSettingController extends Controller
                 }
             }
 
-            \App\Support\TaggedCache::tags(['settings'])->flush();
+            TaggedCache::tags(['settings'])->flush();
 
             DB::commit();
 
@@ -220,9 +245,22 @@ class SiteSettingController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
+
+    private function isSensitiveKey(string $key): bool
+    {
+        return (bool) preg_match('/(?:password|secret|token|api[_-]?key|private[_-]?key|hmac|credential)/i', $key);
+    }
+
+    private function rejectSensitiveKey(string $key): void
+    {
+        abort_if(
+            $this->isSensitiveKey($key),
+            422,
+            'Secret configuration must use the protected application settings API.'
+        );
+    }
 }
-
-

@@ -10,6 +10,7 @@ class Refund extends Model
         'order_id',
         'payment_id',
         'return_request_id',
+        'idempotency_key',
         'user_id',
         'amount',
         'currency',

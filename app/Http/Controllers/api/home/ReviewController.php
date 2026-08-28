@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Home\ReviewRequest;
 use App\Models\Products;
 use App\Models\Reviews;
+use App\Support\TaggedCache;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
 
@@ -34,13 +35,13 @@ class ReviewController extends Controller
             return $this->notFound('Product not found');
         } catch (\Throwable $e) {
             Log::info($e->getMessage());
+
             return $this->error('Something went wrong.', 500);
         }
     }
 
     public function clearCache()
     {
-        \App\Support\TaggedCache::tags(['products'])->flush();
+        TaggedCache::tags(['products'])->flush();
     }
 }
-

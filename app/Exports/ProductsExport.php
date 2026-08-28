@@ -3,15 +3,16 @@
 namespace App\Exports;
 
 use App\Models\Products;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use App\Support\SpreadsheetCellSanitizer;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ProductsExport implements FromCollection, WithHeadings, WithMapping
+class ProductsExport implements FromQuery, WithHeadings, WithMapping
 {
-    public function collection()
+    public function query()
     {
-        return Products::with(['category', 'brand', 'stocks'])->get();
+        return Products::query()->with(['category', 'brand', 'stocks']);
     }
 
     public function headings(): array
@@ -24,7 +25,7 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping
             'Quantity',
             'Category',
             'Brand',
-            'Status'
+            'Status',
         ];
     }
 
@@ -32,12 +33,12 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping
     {
         return [
             $product->id,
-            $product->name,
-            $product->sku,
+            SpreadsheetCellSanitizer::forExport($product->name),
+            SpreadsheetCellSanitizer::forExport($product->sku),
             $product->price,
             $product->stocks ? $product->stocks->quantity : 0,
-            $product->category ? $product->category->name : '',
-            $product->brand ? $product->brand->name : '',
+            SpreadsheetCellSanitizer::forExport($product->category?->name ?? ''),
+            SpreadsheetCellSanitizer::forExport($product->brand?->name ?? ''),
             $product->is_active ? 'Active' : 'Inactive',
         ];
     }

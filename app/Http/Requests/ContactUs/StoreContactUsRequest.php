@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\ContactUs;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreContactUsRequest extends FormRequest

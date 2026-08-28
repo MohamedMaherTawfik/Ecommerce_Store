@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\api\admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\NavLink;
 use App\Http\Controllers\concerns\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\NavLinkRequest;
+use App\Models\NavLink;
+use App\Support\TaggedCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -21,15 +22,16 @@ class NavLinkController extends Controller
     public function index()
     {
         try {
-            $links = \App\Support\TaggedCache::tags(['navlinks'])->remember(
+            $links = TaggedCache::tags(['navlinks'])->remember(
                 'navlinks_all',
                 $this->cacheTime,
-                fn() => NavLink::orderBy('sort_order')->get()
+                fn () => NavLink::orderBy('sort_order')->get()
             );
 
             return $this->success($links, 'Nav links retrieved successfully');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -40,19 +42,20 @@ class NavLinkController extends Controller
     public function show($id)
     {
         try {
-            $link = \App\Support\TaggedCache::tags(['navlinks'])->remember(
+            $link = TaggedCache::tags(['navlinks'])->remember(
                 "navlink_$id",
                 $this->cacheTime,
-                fn() => NavLink::find($id)
+                fn () => NavLink::find($id)
             );
 
-            if (!$link) {
+            if (! $link) {
                 return $this->notFound('Nav link not found');
             }
 
             return $this->success($link, 'Nav link retrieved successfully');
         } catch (\Throwable $e) {
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -67,7 +70,7 @@ class NavLinkController extends Controller
 
             $link = NavLink::create($request->validated());
 
-            \App\Support\TaggedCache::tags(['navlinks'])->flush();
+            TaggedCache::tags(['navlinks'])->flush();
 
             DB::commit();
 
@@ -75,6 +78,7 @@ class NavLinkController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -89,13 +93,13 @@ class NavLinkController extends Controller
 
             $link = NavLink::find($id);
 
-            if (!$link) {
+            if (! $link) {
                 return $this->notFound('Nav link not found');
             }
 
             $link->update($request->validated());
 
-            \App\Support\TaggedCache::tags(['navlinks'])->flush();
+            TaggedCache::tags(['navlinks'])->flush();
 
             DB::commit();
 
@@ -103,6 +107,7 @@ class NavLinkController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
@@ -117,13 +122,13 @@ class NavLinkController extends Controller
 
             $link = NavLink::find($id);
 
-            if (!$link) {
+            if (! $link) {
                 return $this->notFound('Nav link not found');
             }
 
             $link->delete();
 
-            \App\Support\TaggedCache::tags(['navlinks'])->flush();
+            TaggedCache::tags(['navlinks'])->flush();
 
             DB::commit();
 
@@ -131,9 +136,8 @@ class NavLinkController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e);
+
             return $this->error('Internal Server Error');
         }
     }
 }
-
-

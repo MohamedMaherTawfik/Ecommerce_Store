@@ -22,9 +22,11 @@ class SizeController extends Controller
 
         try {
             $size = ProductSizes::create($data);
+
             return $this->success($size);
         } catch (\Throwable $th) {
             Log::error($th);
+
             return $this->error('something went wrong');
         }
     }
@@ -39,13 +41,15 @@ class SizeController extends Controller
 
         try {
             $size = ProductSizes::find($id);
-            if (!$size) {
+            if (! $size) {
                 return $this->notFound('Size not found');
             }
             $size->update($data);
+
             return $this->success($size);
         } catch (\Throwable $th) {
             Log::error($th);
+
             return $this->error('something went wrong');
         }
     }
@@ -55,9 +59,11 @@ class SizeController extends Controller
         try {
             $size = ProductSizes::find($id);
             $size->delete();
+
             return $this->success($size);
         } catch (\Throwable $th) {
             Log::error($th);
+
             return $this->error('something went wrong');
         }
     }

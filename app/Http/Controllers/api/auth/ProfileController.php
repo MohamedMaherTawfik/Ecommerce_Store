@@ -5,10 +5,12 @@ namespace App\Http\Controllers\api\auth;
 use App\Http\Controllers\concerns\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
+use App\Support\Auth\AuthTokenCookie;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 use Throwable;
 
@@ -22,8 +24,8 @@ class ProfileController extends Controller
             $user = auth()->user();
 
             if (! $user) {
-                Log::warning('Profile fetch failed: Unauthenticated.', [
-                    'headers' => request()->headers->all(),
+                Log::warning('Profile fetch failed: unauthenticated.', [
+                    'ip' => request()->ip(),
                 ]);
 
                 return $this->unauthorized('Unauthenticated.');
@@ -59,7 +61,7 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,'.$user->id,
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|extensions:jpg,jpeg,png,webp|mimes:jpg,jpeg,png,webp|dimensions:max_width=4096,max_height=4096|max:2048',
             'phone' => 'nullable|numeric',
         ]);
 
@@ -71,7 +73,7 @@ class ProfileController extends Controller
 
         if ($request->hasFile('image')) {
             if ($user->image) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->image);
+                Storage::disk('public')->delete($user->image);
             }
             $user->image = $request->image->store('users', 'public');
             $user->save();
@@ -99,7 +101,10 @@ class ProfileController extends Controller
         $user->password = Hash::make($validated['new_password']);
         $user->save();
 
-        return $this->success([], 'Password updated successfully.');
+        $user->tokens()->delete();
+
+        return $this->success([], 'Password updated successfully. Please sign in again.')
+            ->withCookie(AuthTokenCookie::forget());
     }
 
     public function deleteAccount()
@@ -111,7 +116,8 @@ class ProfileController extends Controller
             $user->tokens()->delete();
             $user->delete();
 
-            return $this->success([], 'Account deleted successfully.');
+            return $this->success([], 'Account deleted successfully.')
+                ->withCookie(AuthTokenCookie::forget());
 
         } catch (Throwable $e) {
             return $this->error('Something went wrong while deleting account.', 500);

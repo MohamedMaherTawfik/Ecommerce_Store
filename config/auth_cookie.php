@@ -6,5 +6,5 @@ return [
     'path' => env('AUTH_COOKIE_PATH', '/'),
     'domain' => env('AUTH_COOKIE_DOMAIN', env('SESSION_DOMAIN')),
     'secure' => (bool) env('AUTH_COOKIE_SECURE', env('APP_ENV') === 'production'),
-    'same_site' => env('AUTH_COOKIE_SAME_SITE', 'lax'),
+    'same_site' => env('AUTH_COOKIE_SAME_SITE', env('APP_ENV') === 'production' ? 'strict' : 'lax'),
 ];

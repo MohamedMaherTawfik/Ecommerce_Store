@@ -14,6 +14,7 @@ use Throwable;
 class WalletController extends Controller
 {
     use ApiResponse;
+
     public function wallet()
     {
         try {
@@ -49,5 +50,4 @@ class WalletController extends Controller
             return $this->error('Something went wrong.', 500);
         }
     }
-
 }

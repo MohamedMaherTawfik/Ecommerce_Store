@@ -3,17 +3,20 @@
 namespace App\Imports;
 
 use App\Models\Categories;
+use App\Support\SpreadsheetCellSanitizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\SkipsFailures;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithColumnLimit;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithLimit;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Row;
 
-class CategoriesImport implements OnEachRow, SkipsOnFailure, WithChunkReading, WithHeadingRow, WithValidation
+class CategoriesImport implements OnEachRow, SkipsOnFailure, WithChunkReading, WithColumnLimit, WithHeadingRow, WithLimit, WithValidation
 {
     use SkipsFailures;
 
@@ -30,6 +33,7 @@ class CategoriesImport implements OnEachRow, SkipsOnFailure, WithChunkReading, W
     public function onRow(Row $row): void
     {
         $data = $row->toArray();
+        SpreadsheetCellSanitizer::rejectFormula($data, ['name', 'slug', 'status']);
         $name = trim((string) $data['name']);
         $normalizedName = Str::lower($name);
 
@@ -90,9 +94,18 @@ class CategoriesImport implements OnEachRow, SkipsOnFailure, WithChunkReading, W
                 'row' => $failure->row(),
                 'attribute' => $failure->attribute(),
                 'errors' => $failure->errors(),
-                'values' => $failure->values(),
             ])->values()->all(),
         ];
+    }
+
+    public function limit(): int
+    {
+        return 5001;
+    }
+
+    public function endColumn(): string
+    {
+        return 'T';
     }
 
     private function uniqueSlug(string $value, ?int $ignoreId = null): string

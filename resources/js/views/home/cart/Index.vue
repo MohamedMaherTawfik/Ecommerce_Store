@@ -129,7 +129,13 @@ const checkoutForm = reactive({
     phone: '',
     city: '',
     address: '',
+    idempotency_key: '',
 });
+
+const newIdempotencyKey = () => {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    return `checkout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
 
 const visiblePaymentMethods = computed(() => paymentMethods.value.filter((method) => {
     if (method.code !== 'apple_pay') return true;
@@ -224,6 +230,7 @@ const remove = async (id) => {
 const checkout = async () => {
     busy.value = true;
     try {
+        checkoutForm.idempotency_key ||= newIdempotencyKey();
         const response = await OrderService.checkout(checkoutForm);
 
         const paymentUrl = response.payment_url || response.approval_url;
@@ -233,6 +240,7 @@ const checkout = async () => {
         }
 
         toastr.success(`Order ${response.order_number} created.`);
+        checkoutForm.idempotency_key = '';
         await router.push(`/${lang.value}/orders/${response.order_id}`);
     } finally {
         busy.value = false;

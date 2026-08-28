@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\PaymentWebhookLog;
 use App\Services\Payment\PaymentStatusService;
 use App\Services\Payment\PaymobPaymentService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -38,9 +39,9 @@ class PaymentWebhookController extends Controller
         $log = PaymentWebhookLog::create([
             'gateway' => $gatewayName,
             'signature_valid' => false,
-            'payload' => $request->all(),
+            'payload' => $this->redactSensitiveData($request->all()),
             'headers' => collect($request->headers->all())
-                ->except(['authorization', 'cookie'])
+                ->only(['content-type', 'user-agent', 'x-request-id'])
                 ->all(),
             'status' => 'received',
         ]);
@@ -72,7 +73,20 @@ class PaymentWebhookController extends Controller
                     return $this->success(['duplicate' => true], ucfirst($gatewayName).' webhook already processed.');
                 }
 
-                $log->update(['event_id' => $eventId]);
+                try {
+                    $log->update(['event_id' => $eventId]);
+                } catch (QueryException $exception) {
+                    if (! PaymentWebhookLog::where('gateway', $gatewayName)->where('event_id', $eventId)->exists()) {
+                        throw $exception;
+                    }
+
+                    $log->update([
+                        'status' => 'duplicate',
+                        'processed_at' => now(),
+                    ]);
+
+                    return $this->success(['duplicate' => true], ucfirst($gatewayName).' webhook already accepted.');
+                }
             }
 
             if (! ($event['handled'] ?? true)) {
@@ -208,6 +222,21 @@ class PaymentWebhookController extends Controller
             ->first();
 
         return $payment?->order;
+    }
+
+    private function redactSensitiveData(array $data): array
+    {
+        $sensitiveKeys = '/(?:authorization|cookie|password|secret|token|hmac|signature|card|email|phone|first_name|last_name|street|building|floor|apartment|postal)/i';
+
+        foreach ($data as $key => $value) {
+            if (preg_match($sensitiveKeys, (string) $key)) {
+                $data[$key] = '[REDACTED]';
+            } elseif (is_array($value)) {
+                $data[$key] = $this->redactSensitiveData($value);
+            }
+        }
+
+        return $data;
     }
 
     private function recordPending(Orders $order, string $gateway, array $event, array $references): void

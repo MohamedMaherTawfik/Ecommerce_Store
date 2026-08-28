@@ -38,16 +38,19 @@ class AuthController extends Controller
 
             $user->update(['last_seen' => now()]);
 
-            $token = $user->createToken('rag-token')->plainTextToken;
+            $token = $user->createToken(
+                'browser-session',
+                ['*'],
+                now()->addMinutes((int) config('auth_cookie.minutes'))
+            )->plainTextToken;
 
             return $this->success([
                 'user' => new UserResource($user),
-                'token' => $token,
             ], 'Logged in successfully.')->withCookie(AuthTokenCookie::make($token));
         } catch (\Exception $e) {
-            \Log::error('Login Error: '.$e->getMessage(), [
-                'email' => $request->email ?? null,
-                'trace' => $e->getTraceAsString(),
+            \Log::error('User login failed with exception.', [
+                'identity_hash' => hash('sha256', strtolower(trim((string) $request->email))),
+                'exception' => $e::class,
             ]);
 
             return $this->error('Something went wrong during login. Please try again later.', 500);
@@ -83,6 +86,7 @@ class AuthController extends Controller
 
     public function forgotPassword(Request $request)
     {
+        $request->merge(['email' => strtolower(trim((string) $request->input('email')))]);
         $request->validate([
             'email' => 'required|email',
         ]);
@@ -110,6 +114,7 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request)
     {
+        $request->merge(['email' => strtolower(trim((string) $request->input('email')))]);
         $request->validate([
             'email' => 'required|email',
             'otp' => ['required', 'digits:6'],
@@ -132,15 +137,21 @@ class AuthController extends Controller
             return $this->error('Invalid or expired OTP.', 400);
         }
 
-        User::where('email', $request->email)->update([
-            'password' => Hash::make($request->password),
-        ]);
+        $user = User::where('email', $request->email)->first();
+
+        if ($user) {
+            DB::transaction(function () use ($user, $request) {
+                $user->update(['password' => Hash::make($request->password)]);
+                $user->tokens()->delete();
+            });
+        }
 
         DB::table('password_reset_tokens')
             ->where('email', $request->email)
             ->delete();
 
-        return $this->success([], 'Password reset successfully.');
+        return $this->success([], 'Password reset successfully.')
+            ->withCookie(AuthTokenCookie::forget());
     }
 
     public function clearProfileCache($userId = null)

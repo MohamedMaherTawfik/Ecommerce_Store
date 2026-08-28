@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class brands extends Model
 {
-
     use HasFactory, SoftDeletes;
+
     protected $table = 'brands';
+
     protected $fillable = [
         'name',
         'image',
@@ -19,6 +20,6 @@ class brands extends Model
 
     public function products()
     {
-        return $this->hasMany(Products::class,'brand_id');
+        return $this->hasMany(Products::class, 'brand_id');
     }
 }

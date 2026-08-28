@@ -16,10 +16,11 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class InstallerController extends Controller
 {
-    private ?string $bootstrapError = null;
+    private ?string $bootstrapRequestId = null;
 
     public function __construct(
         private readonly EnvironmentSetupService $environmentSetup,
@@ -29,9 +30,10 @@ class InstallerController extends Controller
         try {
             $this->environmentSetup->ensureBootstrapState();
         } catch (\Throwable $e) {
-            $this->bootstrapError = $e->getMessage();
+            $this->bootstrapRequestId = (string) Str::uuid();
 
             Log::error('Installer bootstrap failed in controller constructor', [
+                'request_id' => $this->bootstrapRequestId,
                 'error' => $e->getMessage(),
             ]);
         }
@@ -259,8 +261,10 @@ class InstallerController extends Controller
             ]);
         } catch (\Throwable $e) {
             $this->rollbackInstallationState($envBackup, $markerBackup, $sqlitePath, $sqliteExistedBefore);
+            $requestId = (string) Str::uuid();
 
             Log::error('Installation Error: '.$e->getMessage(), [
+                'request_id' => $requestId,
                 'completion_step' => $completionStep,
                 'marker_path' => $this->installationState->markerPath(),
                 'marker_exists' => $this->installationState->markerExists(),
@@ -273,8 +277,8 @@ class InstallerController extends Controller
             return response()->json([
                 'success' => false,
                 'status' => 'error',
-                'message' => 'Installation failed',
-                'error' => $e->getMessage(),
+                'message' => 'Installation failed. Review the server log using the request ID.',
+                'request_id' => $requestId,
             ], 500);
         }
     }
@@ -314,7 +318,7 @@ class InstallerController extends Controller
 
     private function bootstrapFailureResponse()
     {
-        if ($this->bootstrapError === null) {
+        if ($this->bootstrapRequestId === null) {
             return null;
         }
 
@@ -322,7 +326,7 @@ class InstallerController extends Controller
             'success' => false,
             'status' => 'error',
             'message' => 'Installer bootstrap failed. Unable to prepare environment file.',
-            'error' => $this->bootstrapError,
+            'request_id' => $this->bootstrapRequestId,
         ], 500);
     }
 
