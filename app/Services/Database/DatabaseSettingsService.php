@@ -4,6 +4,7 @@ namespace App\Services\Database;
 
 use App\Models\DatabaseSetting;
 use App\Services\Installer\EnvironmentSetupService;
+use App\Support\Testing\TestIsolationGuard;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,13 @@ class DatabaseSettingsService
 
     public function defaultSqlitePath(): string
     {
+        if (app()->environment('testing') && config('testing.installer_mode', false)) {
+            $path = (string) config('database.connections.sqlite.database');
+            TestIsolationGuard::assertDatabase(['driver' => 'sqlite', 'sqlite_path' => $path]);
+
+            return $path;
+        }
+
         return database_path('database.sqlite');
     }
 
@@ -83,6 +91,12 @@ class DatabaseSettingsService
     public function ensureSqliteDatabaseExists(?string $path = null): string
     {
         $sqlitePath = $this->normalizeSqlitePath($path ?: $this->defaultSqlitePath());
+
+        if ($sqlitePath === ':memory:') {
+            return $sqlitePath;
+        }
+
+        TestIsolationGuard::assertDatabase(['driver' => 'sqlite', 'sqlite_path' => $sqlitePath]);
         $directory = dirname($sqlitePath);
 
         if (! File::exists($directory)) {
@@ -104,6 +118,7 @@ class DatabaseSettingsService
     {
         $settings = $this->preservePasswordWhenBlank($settings);
         $normalized = $this->normalizeSettings($settings);
+        TestIsolationGuard::assertDatabase($normalized);
         $connectionName = 'database_settings_test';
         $config = $this->makeConnectionConfig($normalized);
 
@@ -172,7 +187,7 @@ class DatabaseSettingsService
         $this->ensureSqliteDatabaseExists($settings['sqlite_path']);
         $this->environmentSetup->setEnvValues([
             'DB_CONNECTION' => 'sqlite',
-            'DB_DATABASE' => 'database/database.sqlite',
+            'DB_DATABASE' => app()->environment('testing') ? $settings['sqlite_path'] : 'database/database.sqlite',
             'DB_HOST' => '',
             'DB_PORT' => '',
             'DB_USERNAME' => '',
@@ -187,6 +202,8 @@ class DatabaseSettingsService
     {
         $normalized = $settings !== null ? $this->normalizeSettings($settings) : $this->currentSettings();
 
+        TestIsolationGuard::assertDatabase($normalized);
+
         $this->applyRuntimeConfig($normalized);
 
         Artisan::call('migrate', [
@@ -199,6 +216,7 @@ class DatabaseSettingsService
     public function applyRuntimeConfig(array $settings): void
     {
         $normalized = $this->normalizeSettings($settings);
+        TestIsolationGuard::assertDatabase($normalized);
         $connectionConfig = $this->makeConnectionConfig($normalized);
 
         config([
@@ -213,6 +231,12 @@ class DatabaseSettingsService
 
     public function clearRuntimeCaches(): void
     {
+        if (app()->environment('testing')) {
+            TestIsolationGuard::assertDatabase();
+
+            return;
+        }
+
         Artisan::call('config:clear');
         Artisan::call('cache:clear');
     }
@@ -316,6 +340,10 @@ class DatabaseSettingsService
 
         if ($trimmed === '') {
             $trimmed = $this->defaultSqlitePath();
+        }
+
+        if ($trimmed === ':memory:') {
+            return $trimmed;
         }
 
         if (str_starts_with($trimmed, DIRECTORY_SEPARATOR) || preg_match('/^[A-Za-z]:\\\\/', $trimmed) === 1) {

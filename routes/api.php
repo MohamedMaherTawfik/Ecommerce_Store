@@ -32,7 +32,6 @@ use App\Http\Controllers\api\admin\TicketController;
 use App\Http\Controllers\api\admin\TrustItemController;
 use App\Http\Controllers\api\admin\UserController;
 use App\Http\Controllers\api\auth\AuthController;
-use App\Http\Controllers\api\auth\GoogleAuthController;
 use App\Http\Controllers\api\auth\ProfileController;
 use App\Http\Controllers\api\auth\RegisterController;
 use App\Http\Controllers\api\auth\WalletController;
@@ -82,12 +81,9 @@ Route::prefix('v1')->group(function () {
             ->middleware(['throttle:7,1']);
 
         Route::post('forgot-password', [AuthController::class, 'forgotPassword'])
-            ->middleware(['throttle:5,1', 'guest']);
+            ->middleware(['throttle:password-reset-request', 'guest']);
         Route::post('reset-password', [AuthController::class, 'resetPassword'])
-            ->middleware(['throttle:5,1', 'guest']);
-
-        Route::get('google-login', [GoogleAuthController::class, 'googleLogin']);
-        Route::get('google-callback', [GoogleAuthController::class, 'googleCallback']);
+            ->middleware(['throttle:password-reset-verify', 'guest']);
 
         Route::middleware(['auth:sanctum', 'throttle:15,1'])->group(function () {
             Route::get('wallet', [WalletController::class, 'wallet']);

@@ -2,6 +2,7 @@
 
 namespace App\Services\Installer;
 
+use App\Support\Testing\TestIsolationGuard;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -67,6 +68,12 @@ class InstallationStateService
 
     public function markerPath(): string
     {
+        if (app()->environment('testing') && config('testing.installer_mode', false)) {
+            TestIsolationGuard::assertInstallerPaths();
+
+            return (string) config('testing.installer_marker_path');
+        }
+
         return storage_path('installed.json');
     }
 

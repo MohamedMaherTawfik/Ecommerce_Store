@@ -12,8 +12,6 @@ use App\Http\Resources\Home\CheckoutSummaryResource;
 use App\Http\Resources\Home\OrderCheckoutResource;
 use App\Services\Checkout\CheckoutService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Throwable;
 
 class CheckoutController extends Controller
 {
@@ -55,17 +53,7 @@ class CheckoutController extends Controller
 
     public function placeOrder(PlaceOrderRequest $request)
     {
-        try {
-            $result = $this->checkout->placeOrder($request->user()->id, $request->validated());
-        } catch (Throwable $exception) {
-            Log::error('Checkout payment initialization failed', [
-                'user_id' => $request->user()->id,
-                'gateway' => $request->validated('payment_method'),
-                'message' => $exception->getMessage(),
-            ]);
-
-            return $this->error($exception->getMessage(), 422);
-        }
+        $result = $this->checkout->placeOrder($request->user()->id, $request->validated());
 
         return $this->success([
             'order' => new OrderCheckoutResource($result['order']),

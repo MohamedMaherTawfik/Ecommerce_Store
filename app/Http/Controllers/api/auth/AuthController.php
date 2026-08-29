@@ -97,12 +97,14 @@ class AuthController extends Controller
             return $this->success([], 'If an account exists, a reset code has been sent.');
         }
 
-        $otp = rand(100000, 999999);
+        $otp = random_int(100000, 999999);
 
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $user->email],
             [
                 'token' => Hash::make($otp),
+                'attempts' => 0,
+                'locked_at' => null,
                 'created_at' => now(),
             ]
         );
@@ -121,34 +123,58 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
         ]);
 
-        $record = DB::table('password_reset_tokens')
-            ->where('email', $request->email)
-            ->first();
+        $reset = DB::transaction(function () use ($request): bool {
+            $record = DB::table('password_reset_tokens')
+                ->where('email', $request->email)
+                ->lockForUpdate()
+                ->first();
 
-        $expired = ! $record || now()
-            ->subMinutes(config('store.password_reset_otp_ttl'))
-            ->greaterThan($record->created_at);
-
-        if ($expired || ! Hash::check($request->otp, $record->token)) {
-            if ($expired) {
-                DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            if ($record === null) {
+                return false;
             }
 
-            return $this->error('Invalid or expired OTP.', 400);
-        }
+            $expired = now()
+                ->subMinutes((int) config('store.password_reset_otp_ttl'))
+                ->greaterThan($record->created_at);
+            $maximumAttempts = max(1, (int) config('store.password_reset_max_attempts', 5));
 
-        $user = User::where('email', $request->email)->first();
+            if ($expired) {
+                DB::table('password_reset_tokens')->where('email', $request->email)->delete();
 
-        if ($user) {
-            DB::transaction(function () use ($user, $request) {
+                return false;
+            }
+
+            if ($record->locked_at !== null || (int) $record->attempts >= $maximumAttempts) {
+                return false;
+            }
+
+            if (! Hash::check($request->otp, $record->token)) {
+                $attempts = (int) $record->attempts + 1;
+                DB::table('password_reset_tokens')
+                    ->where('email', $request->email)
+                    ->update([
+                        'attempts' => $attempts,
+                        'locked_at' => $attempts >= $maximumAttempts ? now() : null,
+                    ]);
+
+                return false;
+            }
+
+            $user = User::query()->where('email', $request->email)->lockForUpdate()->first();
+
+            if ($user !== null) {
                 $user->update(['password' => Hash::make($request->password)]);
                 $user->tokens()->delete();
-            });
-        }
+            }
 
-        DB::table('password_reset_tokens')
-            ->where('email', $request->email)
-            ->delete();
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+            return true;
+        });
+
+        if (! $reset) {
+            return $this->error('Invalid or expired OTP.', 400);
+        }
 
         return $this->success([], 'Password reset successfully.')
             ->withCookie(AuthTokenCookie::forget());

@@ -11,6 +11,7 @@ use App\Notifications\PaymentSuccessNotification;
 use App\Services\Admin\AnalyticsService;
 use App\Services\Checkout\InventoryService;
 use App\Services\Home\OrderTimelineService;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -198,12 +199,18 @@ class PaymentStatusService
         return DB::transaction(function () use ($order, $gateway, $transactionId, $amount, $currency, $response, $references) {
             $locked = Orders::whereKey($order->id)->lockForUpdate()->firstOrFail();
             $expectedCurrency = strtoupper((string) ($locked->currency ?: config('checkout.currency')));
+            $payment = Payment::query()
+                ->where('order_id', $locked->id)
+                ->where('gateway', $gateway)
+                ->lockForUpdate()
+                ->first();
+            $paidTotalMinor = min(
+                Money::toMinorUnits($locked->total),
+                $payment ? Money::toMinorUnits($payment->amount) : Money::toMinorUnits($locked->total)
+            );
+            $eventAmountMinor = Money::toMinorUnits($amount);
 
-            if ($locked->payment_status === 'refunded') {
-                return $locked;
-            }
-
-            if (! in_array($locked->payment_status, ['paid', 'partially_refunded'], true)) {
+            if (! in_array($locked->payment_status, ['paid', 'partially_refunded', 'refunded'], true)) {
                 throw ValidationException::withMessages([
                     'status' => ['Only a paid order can transition to refunded.'],
                 ]);
@@ -213,13 +220,66 @@ class PaymentStatusService
                 throw ValidationException::withMessages(['currency' => ['Gateway refund currency does not match the order currency.']]);
             }
 
-            if ($amount <= 0 || $amount - (float) $locked->total > 0.009) {
+            if ($eventAmountMinor <= 0 || $eventAmountMinor > $paidTotalMinor) {
                 throw ValidationException::withMessages(['amount' => ['Gateway refund amount is invalid for this order.']]);
             }
 
-            $paymentStatus = abs($amount - (float) $locked->total) <= 0.009
-                ? 'refunded'
-                : 'partially_refunded';
+            $providerReference = (string) ($references['gateway_refund_id'] ?? $transactionId);
+
+            if ($providerReference === '') {
+                throw ValidationException::withMessages(['refund' => ['Gateway refund reference is required.']]);
+            }
+
+            $alreadyCorrelated = Refund::query()
+                ->where('gateway', $gateway)
+                ->where('gateway_refund_id', $providerReference)
+                ->lockForUpdate()
+                ->first();
+
+            if ($alreadyCorrelated !== null) {
+                if ((int) $alreadyCorrelated->order_id !== (int) $locked->id) {
+                    throw ValidationException::withMessages(['refund' => ['Provider refund reference is already assigned to another order.']]);
+                }
+
+                if ($alreadyCorrelated->status === 'refunded') {
+                    return $locked;
+                }
+            }
+
+            $refunds = Refund::query()
+                ->where('order_id', $locked->id)
+                ->where('gateway', $gateway)
+                ->whereIn('status', ['pending', 'processing', 'refunded'])
+                ->lockForUpdate()
+                ->get();
+            $settledBeforeMinor = $refunds
+                ->where('status', 'refunded')
+                ->sum(fn (Refund $refund): int => Money::toMinorUnits($refund->amount));
+            $eventDeltaMinor = $eventAmountMinor - $settledBeforeMinor;
+            $candidates = $alreadyCorrelated !== null
+                ? collect([$alreadyCorrelated])
+                : $refunds->whereIn('status', ['pending', 'processing'])
+                    ->filter(function (Refund $refund) use ($eventAmountMinor, $eventDeltaMinor): bool {
+                        $refundMinor = Money::toMinorUnits($refund->amount);
+
+                        return $refundMinor === $eventAmountMinor || $refundMinor === $eventDeltaMinor;
+                    })->values();
+
+            if ($candidates->count() !== 1) {
+                throw ValidationException::withMessages([
+                    'refund' => ['Gateway refund event could not be correlated to exactly one pending refund operation.'],
+                ]);
+            }
+
+            /** @var Refund $correlatedRefund */
+            $correlatedRefund = $candidates->first();
+            $settledMinor = $settledBeforeMinor + Money::toMinorUnits($correlatedRefund->amount);
+
+            if ($settledMinor > $paidTotalMinor) {
+                throw ValidationException::withMessages(['amount' => ['Settled refunds would exceed the paid order total.']]);
+            }
+
+            $paymentStatus = $settledMinor === $paidTotalMinor ? 'refunded' : 'partially_refunded';
 
             $locked->update([
                 'payment_status' => $paymentStatus,
@@ -227,40 +287,28 @@ class PaymentStatusService
                 'gateway_response' => $response,
             ]);
 
-            Payment::updateOrCreate(
-                ['order_id' => $locked->id, 'gateway' => $gateway],
-                [
-                    'user_id' => $locked->user_id,
-                    'transaction_id' => $transactionId,
-                    'gateway_payment_id' => $references['gateway_payment_id'] ?? null,
-                    'gateway_order_id' => $references['gateway_order_id'] ?? null,
-                    'gateway_reference' => $references['gateway_reference'] ?? $transactionId,
-                    'amount' => $locked->total,
-                    'currency' => $expectedCurrency,
-                    'status' => $paymentStatus,
-                    'gateway_response' => $response,
-                    'refunded_at' => now(),
-                ]
-            );
+            Payment::updateOrCreate(['order_id' => $locked->id, 'gateway' => $gateway], [
+                'user_id' => $locked->user_id,
+                'transaction_id' => $transactionId,
+                'gateway_payment_id' => $references['gateway_payment_id'] ?? $transactionId,
+                'gateway_order_id' => $references['gateway_order_id'] ?? null,
+                'gateway_reference' => $references['gateway_reference'] ?? $transactionId,
+                'amount' => $locked->total,
+                'currency' => $expectedCurrency,
+                'status' => $paymentStatus,
+                'gateway_response' => $response,
+                'refunded_at' => now(),
+            ]);
 
-            $returnIds = Refund::where('order_id', $locked->id)
-                ->where('gateway', 'paymob')
-                ->where('status', 'pending')
-                ->pluck('return_request_id')
-                ->filter();
+            $correlatedRefund->update([
+                'gateway_refund_id' => $providerReference,
+                'status' => 'refunded',
+                'gateway_response' => $response,
+                'processed_at' => now(),
+            ]);
 
-            Refund::where('order_id', $locked->id)
-                ->where('gateway', 'paymob')
-                ->where('status', 'pending')
-                ->update([
-                    'gateway_refund_id' => $transactionId,
-                    'status' => 'refunded',
-                    'gateway_response' => $response,
-                    'processed_at' => now(),
-                ]);
-
-            if ($paymentStatus === 'refunded' && $returnIds->isNotEmpty()) {
-                ReturnRequest::whereIn('id', $returnIds)
+            if ($correlatedRefund->return_request_id !== null) {
+                ReturnRequest::whereKey($correlatedRefund->return_request_id)
                     ->where('status', 'processing')
                     ->update(['status' => 'refunded']);
             }
