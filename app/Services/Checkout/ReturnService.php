@@ -3,8 +3,11 @@
 namespace App\Services\Checkout;
 
 use App\Models\Orders;
+use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\ReturnRequest;
+use App\Models\ReturnRequestItem;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -21,6 +24,10 @@ class ReturnService
         'refunded' => [],
     ];
 
+    private const QUANTITY_RESERVING_STATUSES = ['pending', 'approved', 'received', 'processing', 'refunded'];
+
+    private const REFUND_RESERVING_STATUSES = ['pending', 'processing', 'refunded'];
+
     public function __construct(private readonly InventoryService $inventory) {}
 
     public function create(int $userId, Orders $order, array $data): ReturnRequest
@@ -34,31 +41,56 @@ class ReturnService
         }
 
         return DB::transaction(function () use ($userId, $order, $data) {
+            $lockedOrder = Orders::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+            $requestedQuantities = collect($data['items'])
+                ->groupBy(fn (array $item) => (int) $item['order_item_id'])
+                ->map(fn ($items) => $items->sum(fn (array $item) => (int) $item['quantity']));
+            $orderItems = $lockedOrder->items()
+                ->whereIn('id', $requestedQuantities->keys())
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            if ($orderItems->count() !== $requestedQuantities->count()) {
+                throw ValidationException::withMessages(['items' => ['One or more return items do not belong to this order.']]);
+            }
+
+            foreach ($requestedQuantities as $orderItemId => $requestedQuantity) {
+                $orderItem = $orderItems->get($orderItemId);
+                $reservedQuantity = (int) ReturnRequestItem::query()
+                    ->where('order_item_id', $orderItemId)
+                    ->whereHas('returnRequest', fn ($query) => $query->whereIn('status', self::QUANTITY_RESERVING_STATUSES))
+                    ->sum('quantity');
+
+                if ($requestedQuantity > ((int) $orderItem->quantity - $reservedQuantity)) {
+                    throw ValidationException::withMessages([
+                        'items' => ['Return quantity exceeds the unreserved purchased quantity.'],
+                    ]);
+                }
+            }
+
             $return = ReturnRequest::create([
-                'order_id' => $order->id,
+                'order_id' => $lockedOrder->id,
                 'user_id' => $userId,
                 'reason' => $data['reason'],
                 'notes' => $data['notes'] ?? null,
                 'status' => 'pending',
             ]);
 
-            foreach ($data['items'] as $itemData) {
-                $orderItem = $order->items()->whereKey($itemData['order_item_id'])->firstOrFail();
-                if ((int) $itemData['quantity'] > (int) $orderItem->quantity) {
-                    throw ValidationException::withMessages(['items' => ['Return quantity cannot exceed purchased quantity.']]);
-                }
-
+            foreach ($requestedQuantities as $orderItemId => $quantity) {
+                $orderItem = $orderItems->get($orderItemId);
+                $firstItemData = collect($data['items'])->firstWhere('order_item_id', $orderItemId);
                 $return->items()->create([
                     'order_item_id' => $orderItem->id,
                     'product_id' => $orderItem->product_id,
                     'product_variant_id' => $orderItem->product_variant_id,
-                    'quantity' => $itemData['quantity'],
-                    'reason' => $itemData['reason'] ?? null,
+                    'quantity' => $quantity,
+                    'reason' => $firstItemData['reason'] ?? null,
                     'status' => 'pending',
                 ]);
             }
 
-            $order->update(['refund_status' => 'requested']);
+            $lockedOrder->update(['refund_status' => 'requested']);
 
             return $return->fresh(['items.orderItem.product', 'order']);
         });
@@ -115,10 +147,11 @@ class ReturnService
     public function refund(ReturnRequest $return, array $data): Refund
     {
         return DB::transaction(function () use ($return, $data) {
-            $locked = ReturnRequest::with(['order.latestPayment'])
+            $locked = ReturnRequest::with(['items.orderItem'])
                 ->whereKey($return->id)
                 ->lockForUpdate()
                 ->firstOrFail();
+            $order = Orders::query()->whereKey($locked->order_id)->lockForUpdate()->firstOrFail();
             $idempotencyKey = hash('sha256', "return:{$locked->id}:paymob");
             $existing = Refund::where('idempotency_key', $idempotencyKey)
                 ->orWhere('return_request_id', $locked->id)
@@ -135,26 +168,57 @@ class ReturnService
                 ]);
             }
 
-            if ($locked->order->payment_status !== 'paid') {
+            if (! in_array($order->payment_status, ['paid', 'partially_refunded'], true)) {
                 throw ValidationException::withMessages([
                     'payment' => ['Only a paid order can be refunded.'],
                 ]);
             }
 
-            $amount = (float) ($data['amount'] ?? $locked->order->total);
-            if ($amount <= 0 || $amount - (float) $locked->order->total > 0.009) {
+            $payment = Payment::query()
+                ->where('order_id', $order->id)
+                ->whereIn('status', ['paid', 'partially_refunded', 'refunded'])
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
+            $paidMinor = min(
+                Money::toMinorUnits($order->total),
+                $payment ? Money::toMinorUnits($payment->amount) : Money::toMinorUnits($order->total)
+            );
+            $eligibleMinor = $locked->items->sum(function ($returnItem): int {
+                $orderItem = $returnItem->orderItem;
+                $unitMinor = filled($orderItem?->unit_price) && Money::toMinorUnits($orderItem->unit_price) > 0
+                    ? Money::toMinorUnits($orderItem->unit_price)
+                    : intdiv(Money::toMinorUnits($orderItem?->total_price ?: $orderItem?->price), max(1, (int) $orderItem?->quantity));
+
+                return $unitMinor * (int) $returnItem->quantity;
+            });
+            $requestedMinor = Money::toMinorUnits($data['amount'] ?? Money::fromMinorUnits($eligibleMinor));
+            $reservedMinor = Refund::query()
+                ->where('order_id', $order->id)
+                ->whereIn('status', self::REFUND_RESERVING_STATUSES)
+                ->lockForUpdate()
+                ->get()
+                ->sum(fn (Refund $refund): int => Money::toMinorUnits($refund->amount));
+
+            if ($requestedMinor <= 0 || $requestedMinor > $eligibleMinor) {
                 throw ValidationException::withMessages([
-                    'amount' => ['Refund amount must be positive and cannot exceed the order total.'],
+                    'amount' => ['Refund amount must be positive and cannot exceed the eligible returned item value.'],
+                ]);
+            }
+
+            if ($requestedMinor > ($paidMinor - $reservedMinor)) {
+                throw ValidationException::withMessages([
+                    'amount' => ['Refund amount exceeds the remaining paid amount for this order.'],
                 ]);
             }
 
             $refund = Refund::firstOrCreate(['idempotency_key' => $idempotencyKey], [
                 'order_id' => $locked->order_id,
-                'payment_id' => $locked->order->latestPayment?->id,
+                'payment_id' => $payment?->id,
                 'return_request_id' => $locked->id,
                 'user_id' => $locked->user_id,
-                'amount' => $amount,
-                'currency' => $locked->order->currency ?? config('checkout.currency'),
+                'amount' => Money::fromMinorUnits($requestedMinor),
+                'currency' => $order->currency ?? config('checkout.currency'),
                 'gateway' => 'paymob',
                 'status' => 'pending',
                 'reason' => $locked->reason,
@@ -163,7 +227,7 @@ class ReturnService
             ]);
 
             $locked->update(['status' => 'processing']);
-            $locked->order->update(['refund_status' => 'processing']);
+            $order->update(['refund_status' => 'processing']);
 
             Log::info('Refund operation recorded', [
                 'refund_id' => $refund->id,

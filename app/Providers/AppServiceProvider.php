@@ -71,6 +71,24 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by(hash('sha256', $identity.'|'.$request->ip()));
         });
 
+        RateLimiter::for('password-reset-request', function (Request $request) {
+            $identity = Str::lower(trim((string) $request->input('email')));
+
+            return [
+                Limit::perMinute(5)->by(hash('sha256', $identity.'|'.$request->ip())),
+                Limit::perHour(10)->by(hash('sha256', $identity)),
+            ];
+        });
+
+        RateLimiter::for('password-reset-verify', function (Request $request) {
+            $identity = Str::lower(trim((string) $request->input('email')));
+
+            return [
+                Limit::perMinute(5)->by(hash('sha256', $identity.'|'.$request->ip())),
+                Limit::perHour(10)->by(hash('sha256', $identity)),
+            ];
+        });
+
         if ($this->app->runningInConsole()) {
             $this->app->make(EnvironmentSetupService::class)->ensureBootstrapState();
             $this->app->make(InstallationStateService::class)->logState('app_boot');

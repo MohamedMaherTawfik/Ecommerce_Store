@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Database\DatabaseSettingsService;
 use App\Services\Installer\EnvironmentSetupService;
 use App\Services\Installer\InstallationStateService;
+use App\Support\Testing\TestIsolationGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -107,7 +108,7 @@ class InstallerController extends Controller
             ? is_writable($sqlitePath)
             : is_writable(dirname($sqlitePath));
 
-        $envPath = base_path('.env');
+        $envPath = $this->environmentSetup->environmentPath();
         if (file_exists($envPath)) {
             $permissions['.env'] = is_writable($envPath);
         } else {
@@ -145,7 +146,7 @@ class InstallerController extends Controller
             ], 403);
         }
 
-        $envPath = base_path('.env');
+        $envPath = $this->environmentSetup->environmentPath();
         $envBackup = File::exists($envPath) ? File::get($envPath) : null;
         $markerPath = $this->installationState->markerPath();
         $markerBackup = File::exists($markerPath) ? File::get($markerPath) : null;
@@ -332,6 +333,13 @@ class InstallerController extends Controller
 
     private function clearAndRebuildConfig(): void
     {
+        if (app()->environment('testing')) {
+            TestIsolationGuard::assertDatabase();
+            TestIsolationGuard::assertInstallerPaths();
+
+            return;
+        }
+
         Artisan::call('config:clear');
         Artisan::call('cache:clear');
         Artisan::call('view:clear');
@@ -340,13 +348,19 @@ class InstallerController extends Controller
 
     private function clearApplicationCaches(): void
     {
+        if (app()->environment('testing')) {
+            TestIsolationGuard::assertDatabase();
+
+            return;
+        }
+
         Artisan::call('optimize:clear');
     }
 
     private function writeInstalledMarker(string $appName, string $appUrl): void
     {
-        $storageDir = storage_path();
         $markerPath = $this->installationState->markerPath();
+        $storageDir = dirname($markerPath);
 
         Log::info('Installer marker write started', [
             'storage_path' => $storageDir,
@@ -415,7 +429,7 @@ class InstallerController extends Controller
     {
         try {
             if ($envBackup !== null) {
-                File::put(base_path('.env'), $envBackup);
+                File::put($this->environmentSetup->environmentPath(), $envBackup);
             }
 
             if ($markerBackup !== null) {

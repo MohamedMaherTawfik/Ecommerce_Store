@@ -14,6 +14,14 @@ This application must be deployed behind HTTPS with separate, explicitly named A
 8. Leave Paymob disabled until its public key, secret key, HMAC secret, integration IDs, and HTTPS callback/webhook URLs are configured. Rotate any credential that has ever appeared in source control or browser code.
 9. Configure Google OAuth only when required, using an exact HTTPS redirect URI registered with Google.
 
+Google OAuth login and callback routes intentionally use Laravel's session-backed `web` middleware so Socialite can validate the OAuth `state` nonce. The load balancer must preserve the secure session cookie across the Google redirect; do not change these routes to stateless API middleware.
+
+## Test isolation safety
+
+PHPUnit forces an in-memory database by default and uses separate config, route, and event cache paths under `storage/framework/testing`. Installer tests create UUID-named SQLite, environment, and marker files only in that directory. Runtime guards reject the application SQLite file and server database names that are not explicitly test-named.
+
+Keep `storage/framework/testing` writable in CI. Never override the test guard or point `DB_DATABASE` at production when running `php artisan test`. The installer regression test checks before/after hashes of the configured application database and `.env`.
+
 Run the fail-closed configuration check after caching configuration:
 
 ```bash
@@ -35,6 +43,8 @@ php artisan view:cache
 php artisan event:cache
 php artisan app:production-preflight
 ```
+
+Back up the production database before migrations. The refund-correlation migration adds a unique provider-reference constraint; investigate and reconcile any pre-existing duplicate non-null provider refund references before deployment rather than deleting financial records automatically.
 
 Deploy immutable application files and write only to `storage` and `bootstrap/cache`. Protect `.env`, logs, backups, exports, and uploaded temporary spreadsheets from direct web access. Point the web root at `public/` only.
 

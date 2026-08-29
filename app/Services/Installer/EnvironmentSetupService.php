@@ -2,6 +2,7 @@
 
 namespace App\Services\Installer;
 
+use App\Support\Testing\TestIsolationGuard;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\File;
 use RuntimeException;
@@ -12,6 +13,16 @@ class EnvironmentSetupService
 
     public function ensureBootstrapState(): void
     {
+        if (app()->environment('testing')) {
+            TestIsolationGuard::assertDatabase();
+
+            if (! config('testing.installer_mode', false)) {
+                return;
+            }
+
+            TestIsolationGuard::assertInstallerPaths();
+        }
+
         $this->ensureEnvironmentFileExists();
         $this->ensureAppKey();
         $this->ensureDefaultDatabaseConfiguration();
@@ -20,7 +31,7 @@ class EnvironmentSetupService
 
     public function ensureEnvironmentFileExists(): void
     {
-        $envPath = base_path('.env');
+        $envPath = $this->environmentPath();
 
         if (File::exists($envPath)) {
             return;
@@ -48,7 +59,7 @@ class EnvironmentSetupService
     {
         $this->ensureEnvironmentFileExists();
 
-        $envPath = base_path('.env');
+        $envPath = $this->environmentPath();
         $originalContent = File::exists($envPath) ? File::get($envPath) : '';
         $content = $originalContent;
 
@@ -118,6 +129,12 @@ class EnvironmentSetupService
             return;
         }
 
+        if (app()->environment('testing')) {
+            TestIsolationGuard::assertDatabase();
+
+            return;
+        }
+
         $sqlitePath = database_path('database.sqlite');
         $databaseDir = dirname($sqlitePath);
 
@@ -147,6 +164,21 @@ class EnvironmentSetupService
     public function isInstalled(): bool
     {
         return $this->installationState->isInstalled();
+    }
+
+    public function environmentPath(): string
+    {
+        if (! app()->environment('testing')) {
+            return base_path('.env');
+        }
+
+        if (! config('testing.installer_mode', false)) {
+            throw new RuntimeException('Environment writes are disabled outside disposable installer test mode.');
+        }
+
+        TestIsolationGuard::assertInstallerPaths();
+
+        return (string) config('testing.environment_path');
     }
 
     private function removeDuplicateEnvKeys(string $content, string $key): string

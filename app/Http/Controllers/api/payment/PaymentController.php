@@ -8,7 +8,6 @@ use App\Http\Requests\Payment\CheckoutRequest;
 use App\Models\Addresses;
 use App\Models\Orders;
 use App\Services\Checkout\CheckoutService;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -29,38 +28,28 @@ class PaymentController extends Controller
         $method = 'paymob';
         $validated['payment_method'] = $method;
 
-        try {
-            $address = $this->resolveCheckoutAddress($request, $validated);
-            $result = $this->checkout->placeOrder($request->user()->id, [
-                ...$validated,
-                'shipping_address_id' => $address->id,
-            ]);
-            $order = $result['order'];
-            $payment = $result['payment'];
+        $address = $this->resolveCheckoutAddress($request, $validated);
+        $result = $this->checkout->placeOrder($request->user()->id, [
+            ...$validated,
+            'shipping_address_id' => $address->id,
+        ]);
+        $order = $result['order'];
+        $payment = $result['payment'];
 
-            Log::info('Checkout order created', [
-                'user_id' => $request->user()->id,
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'method' => $method,
-            ]);
+        Log::info('Checkout order created', [
+            'user_id' => $request->user()->id,
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'method' => $method,
+        ]);
 
-            return $this->apiSuccess([
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'payment_status' => $order->payment_status,
-                'total' => $order->total,
-                ...$payment,
-            ], 'Payment initialized successfully.');
-        } catch (Exception $e) {
-            Log::error('Checkout payment initialization failed', [
-                'user_id' => $request->user()->id,
-                'gateway' => $method,
-                'message' => $e->getMessage(),
-            ]);
-
-            return $this->apiError($e->getMessage(), 422);
-        }
+        return $this->apiSuccess([
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'payment_status' => $order->payment_status,
+            'total' => $order->total,
+            ...$payment,
+        ], 'Payment initialized successfully.');
     }
 
     public function orderStatus(Request $request, int $id): JsonResponse

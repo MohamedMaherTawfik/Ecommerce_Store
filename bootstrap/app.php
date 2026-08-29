@@ -12,6 +12,8 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -70,11 +72,22 @@ return Application::configure(basePath: dirname(__DIR__))
                 default => 'Server error.',
             };
 
-            return response()->json([
+            $requestId = $status === 500 ? (string) Str::uuid() : null;
+
+            if ($requestId !== null) {
+                Log::error('Unhandled API exception', [
+                    'request_id' => $requestId,
+                    'exception' => $exception::class,
+                    'path' => $request->path(),
+                ]);
+            }
+
+            return response()->json(array_filter([
                 'success' => false,
                 'message' => $message,
                 'data' => null,
                 'errors' => $exception instanceof ValidationException ? $exception->errors() : [],
-            ], $status);
+                'request_id' => $requestId,
+            ], fn ($value, $key) => $key !== 'request_id' || $value !== null, ARRAY_FILTER_USE_BOTH), $status);
         });
     })->create();

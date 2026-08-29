@@ -199,7 +199,6 @@ class MarketplaceAuditTest extends TestCase
     public function test_google_login_and_callback_create_or_link_accounts(): void
     {
         $driver = Mockery::mock();
-        $driver->shouldReceive('stateless')->andReturnSelf();
         $driver->shouldReceive('redirect')->andReturn(redirect()->away('https://accounts.google.com/mock'));
 
         Socialite::shouldReceive('driver')

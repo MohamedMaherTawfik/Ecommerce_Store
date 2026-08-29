@@ -5,6 +5,8 @@ namespace App\Http\Controllers\api\auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\Auth\AuthTokenCookie;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -21,7 +23,6 @@ class GoogleAuthController extends Controller
     public function googleLogin()
     {
         return Socialite::driver('google')
-            ->stateless()
             ->redirect();
     }
 
@@ -29,10 +30,9 @@ class GoogleAuthController extends Controller
     {
         try {
             $googleUser = Socialite::driver('google')
-                ->stateless()
                 ->user();
 
-            $email = $googleUser->getEmail();
+            $email = Str::lower(trim((string) $googleUser->getEmail()));
 
             if (! $email) {
                 return redirect()->away(
@@ -42,21 +42,41 @@ class GoogleAuthController extends Controller
                 );
             }
 
-            $user = User::updateOrCreate(
-                ['email' => $email],
-                [
+            $user = DB::transaction(function () use ($email, $googleUser) {
+                $existing = User::query()
+                    ->whereRaw('LOWER(email) = ?', [$email])
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing !== null) {
+                    if (! $existing->is_active) {
+                        return null;
+                    }
+
+                    $existing->forceFill([
+                        'google_id' => $googleUser->getId(),
+                        'avatar' => $googleUser->getAvatar(),
+                        'email_verified_at' => $existing->email_verified_at ?: now(),
+                        'last_seen' => now(),
+                    ])->save();
+
+                    return $existing;
+                }
+
+                return User::create([
+                    'email' => $email,
                     'name' => $googleUser->getName() ?: 'Google User',
                     'role' => 'user',
                     'is_active' => true,
                     'google_id' => $googleUser->getId(),
                     'avatar' => $googleUser->getAvatar(),
                     'email_verified_at' => now(),
-                    'password' => Str::random(24),
+                    'password' => Hash::make(Str::random(64)),
                     'last_seen' => now(),
-                ]
-            );
+                ]);
+            });
 
-            if (! $user->is_active) {
+            if ($user === null) {
                 return redirect()->away(
                     $this->frontendBaseUrl()
                     .'/auth/google-error?message='
